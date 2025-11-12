@@ -1,0 +1,264 @@
+{% extends "base.html" %}
+
+{% block title %}Nueva Impresora - CNE{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-4">
+    <div class="col-lg-8">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-plus-circle me-2"></i>Agregar Nueva Impresora
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" id="formImpresora">
+                    <!-- Información de Ubicación -->
+                    <div class="row mb-4">
+                        <div class="col-md-8 mb-3">
+                            <div class="form-floating">
+                                <select class="form-select" id="oficina" name="oficina" required>
+                                    <option value="">Seleccione una oficina...</option>
+                                    {% for oficina in oficinas %}
+                                        <option value="{{ oficina }}">{{ oficina }}</option>
+                                    {% endfor %}
+                                </select>
+                                <label for="oficina"><i class="fas fa-building me-1"></i>Oficina</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="form-floating">
+                                <input type="text" class="form-control" id="piso" name="piso" readonly>
+                                <label for="piso"><i class="fas fa-layer-group me-1"></i>Piso</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Información de la impresora -->
+                    <div class="row mb-4">
+                        <div class="col-md-4 mb-3">
+                            <div class="form-floating">
+                                <select class="form-select" id="marca" name="marca" required>
+                                    <option value="">Seleccione una marca...</option>
+                                    {% for marca in marcas %}
+                                        <option value="{{ marca.id }}" data-nombre="{{ marca.nombre }}">{{ marca.nombre }}</option>
+                                    {% endfor %}
+                                </select>
+                                <label for="marca"><i class="fas fa-tag me-1"></i>Marca</label>
+                            </div>
+                            <input type="hidden" id="marca_nombre" name="marca_nombre">
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <div class="form-floating">
+                                <select class="form-select" id="modelo" name="modelo" required disabled>
+                                    <option value="">Primero seleccione marca...</option>
+                                </select>
+                                <label for="modelo"><i class="fas fa-barcode me-1"></i>Modelo</label>
+                            </div>
+                            <input type="hidden" id="modelo_nombre" name="modelo_nombre">
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <div class="form-floating">
+                                <input type="text" class="form-control" id="toner" name="toner" readonly placeholder="Se completará automáticamente">
+                                <label for="toner"><i class="fas fa-fill-drip me-1"></i>Toner Compatible</label>
+                            </div>
+                            <small class="form-text text-muted">Se completa automáticamente según marca y modelo</small>
+                        </div>
+                        
+                        <div class="col-md-12 mb-3">
+                            <div class="form-floating">
+                                <input type="text" class="form-control" id="numero_serie" name="numero_serie" placeholder="Número de serie">
+                                <label for="numero_serie"><i class="fas fa-hashtag me-1"></i>Número de Serie</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tipo de Conexión SIMPLIFICADO -->
+                    <div class="row mb-4">
+                        <div class="col-12 mb-3">
+                            <label class="form-label fw-semibold"><i class="fas fa-network-wired me-1"></i>Tipo de Conexión</label>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="radio" name="tipo_conexion" id="tipoRed" value="red" checked>
+                                <label class="form-check-label" for="tipoRed">
+                                    <i class="fas fa-wifi me-1 text-info"></i>Con IP propia (conectada a la red)
+                                </label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="radio" name="tipo_conexion" id="tipoCompartida" value="compartida">
+                                <label class="form-check-label" for="tipoCompartida">
+                                    <i class="fas fa-desktop me-1 text-success"></i>Compartida desde PC
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="tipo_conexion" id="tipoDesconectada" value="desconectada">
+                                <label class="form-check-label" for="tipoDesconectada">
+                                    <i class="fas fa-plug me-1 text-danger"></i>Desconectada / Sin conexión
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-8 mb-3" id="ipField">
+                            <div class="form-floating">
+                                <input type="text" class="form-control" id="ip" name="ip" placeholder="16.1.x.x" pattern="16\.1\.\d{1,3}\.\d{1,3}">
+                                <label for="ip"><i class="fas fa-globe me-1"></i>Dirección IP</label>
+                                <div class="form-text" id="ipHelp">
+                                    IP de la impresora o de la PC que la comparte
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Observaciones -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="form-floating">
+                                <textarea class="form-control" id="observaciones" name="observaciones" style="height:100px" placeholder="Observaciones adicionales..."></textarea>
+                                <label for="observaciones"><i class="fas fa-comment me-1"></i>Observaciones</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botones -->
+                    <div class="row">
+                        <div class="col-12">
+                            <hr>
+                            <div class="d-flex justify-content-between">
+                                <a href="/impresoras" class="btn btn-secondary"><i class="fas fa-times me-1"></i>Cancelar</a>
+                                <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i>Guardar Impresora</button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const oficinaSelect = document.getElementById('oficina');
+const pisoInput = document.getElementById('piso');
+const marcaSelect = document.getElementById('marca');
+const modeloSelect = document.getElementById('modelo');
+const tonerInput = document.getElementById('toner');
+const tipoRed = document.getElementById('tipoRed');
+const tipoCompartida = document.getElementById('tipoCompartida');
+const tipoDesconectada = document.getElementById('tipoDesconectada');
+const ipField = document.getElementById('ipField');
+const ipInput = document.getElementById('ip');
+const ipHelp = document.getElementById('ipHelp');
+
+// Función para cargar piso
+async function cargarPiso() {
+    const oficinaNombre = oficinaSelect.value;
+    if (oficinaNombre) {
+        try {
+            const response = await fetch(`/api/oficina/${encodeURIComponent(oficinaNombre)}/piso`);
+            const data = await response.json();
+            pisoInput.value = data.piso || '';
+        } catch (error) {
+            console.error('Error cargando piso:', error);
+            pisoInput.value = '';
+        }
+    } else {
+        pisoInput.value = '';
+    }
+}
+
+// Función para cargar modelos según marca
+async function cargarModelos() {
+    const marcaId = marcaSelect.value;
+    const marcaNombre = marcaSelect.options[marcaSelect.selectedIndex].getAttribute('data-nombre');
+    document.getElementById('marca_nombre').value = marcaNombre || '';
+    
+    // Limpiar modelo y toner
+    modeloSelect.innerHTML = '<option value="">Cargando...</option>';
+    modeloSelect.disabled = true;
+    tonerInput.value = '';
+    
+    if (marcaId) {
+        try {
+            const response = await fetch(`/api/impresoras/modelos/${marcaId}`);
+            const data = await response.json();
+            
+            modeloSelect.innerHTML = '<option value="">Seleccione un modelo...</option>';
+            data.modelos.forEach(modelo => {
+                const option = document.createElement('option');
+                option.value = modelo.id;
+                option.textContent = modelo.nombre;
+                modeloSelect.appendChild(option);
+            });
+            modeloSelect.disabled = false;
+        } catch (error) {
+            console.error('Error cargando modelos:', error);
+            modeloSelect.innerHTML = '<option value="">Error cargando modelos</option>';
+        }
+    } else {
+        modeloSelect.innerHTML = '<option value="">Primero seleccione marca...</option>';
+        modeloSelect.disabled = true;
+    }
+}
+
+// Función para cargar toner según marca y modelo
+async function cargarToner() {
+    const marcaId = marcaSelect.value;
+    const modeloId = modeloSelect.value;
+    
+    
+    tonerInput.value = '';
+    
+    if (marcaId && modeloId) {
+        try {
+            const response = await fetch(`/api/impresoras/toner/${marcaId}/${modeloId}`);
+            const data = await response.json();
+            
+            if (data.toner) {
+                tonerInput.value = data.toner;
+            } else {
+                tonerInput.value = 'No especificado';
+            }
+        } catch (error) {
+            console.error('Error cargando toner:', error);
+            tonerInput.value = 'Error cargando';
+        }
+    }
+}
+
+// Función para actualizar conexión
+function actualizarConexion() {
+    if (tipoDesconectada.checked) {
+        ipField.style.display = 'none';
+        ipInput.required = false;
+        ipInput.value = '';
+    } else {
+        ipField.style.display = 'block';
+        ipInput.required = false;
+        
+        if (tipoRed.checked) {
+            ipHelp.textContent = 'IP propia de la impresora conectada a la red';
+            ipHelp.className = 'form-text text-info';
+        } else if (tipoCompartida.checked) {
+            ipHelp.textContent = 'IP de la PC desde la cual se comparte la impresora';
+            ipHelp.className = 'form-text text-secondary';
+        }
+    }
+}
+
+// Event listeners
+oficinaSelect.addEventListener('change', cargarPiso);
+marcaSelect.addEventListener('change', cargarModelos);
+tipoRed.addEventListener('change', actualizarConexion);
+tipoCompartida.addEventListener('change', actualizarConexion);
+tipoDesconectada.addEventListener('change', actualizarConexion);
+modeloSelect.addEventListener('change', function() {
+    const modeloNombre = this.options[this.selectedIndex].textContent;
+    document.getElementById('modelo_nombre').value = modeloNombre || '';
+    cargarToner();
+});   
+// Inicializar
+actualizarConexion();
+</script>
+{% endblock %}

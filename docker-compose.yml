@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  inventario-web:
+    build: .
+    container_name: inventario-web-app
+    ports:
+      - "5000:5000"
+    volumes:
+      # Volumen para bases de datos locales de fallback
+      - ./db:/app/db
+      # Montaje del directorio de red compartida (ajustar según tu sistema)
+      # Para Windows con WSL, descomentar y ajustar la ruta:
+      # - //16.1.1.118/db:/mnt/shared-db
+      # Para Linux:
+      # - /mnt/16.1.1.118/db:/mnt/shared-db
+    environment:
+      - FLASK_ENV=production
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+    networks:
+      - inventario-network
+
+networks:
+  inventario-network:
+    driver: bridge
+
+volumes:
+  db-local:
+    driver: local

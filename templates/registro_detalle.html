@@ -1,0 +1,453 @@
+{% extends "base.html" %}
+
+{% block title %}Detalle del Registro #{{ registro.id }} - Sistema de Inventario{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Dashboard</a></li>
+            <li class="breadcrumb-item active">Registro #{{ registro.id }}</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <div class="col-lg-9">
+            <!-- Header del Registro -->
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">
+                            <i class="fas fa-laptop me-2"></i>
+                            Registro #{{ registro.id }}
+                        </h4>
+                        <div class="btn-group" role="group">
+                            <a href="{{ url_for('editar_registro', registro_id=registro.id) }}" 
+                               class="btn btn-warning btn-sm">
+                                <i class="fas fa-edit me-1"></i>Editar
+                            </a>
+                            <button type="button" class="btn btn-danger btn-sm" 
+                                    onclick="confirmarEliminar({{ registro.id }}, '{{ registro.nombre_pc or 'Equipo' }}')">
+                                <i class="fas fa-trash me-1"></i>Eliminar
+                            </button>
+                        </div>
+                    </div>
+                    <p class="mb-0 mt-2 small">
+                        <i class="fas fa-calendar me-1"></i>
+                        Creado: {{ registro.fecha_creacion[:19] if registro.fecha_creacion else 'Fecha no disponible' }}
+                    </p>
+                </div>
+            </div>
+
+            <!-- Empleado y Ubicación -->
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user text-primary me-2"></i>
+                        Empleado y Ubicación
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- PERSONA = campo "usuario" de BD (el que necesita llenarse) -->
+                        <div class="col-md-6 mb-3">
+                            <h6 class="text-muted small mb-1">PERSONA</h6>
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-user text-primary me-2"></i>
+                                {% if registro.usuario_persona %}
+                                    <span class="fw-bold text-success">{{ registro.usuario_persona }}</span>
+                                {% else %}
+                                    <span class="text-muted">Sin asignar</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <!-- USUARIO RED = campo "pc_usuario" de BD (el que tiene "callcenter") -->
+                        <div class="col-md-6 mb-3">
+                            <h6 class="text-muted small mb-1">USUARIO RED</h6>
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-user-cog text-primary me-2"></i>
+                                {% if registro.pc_usuario %}
+                                    <code>{{ registro.pc_usuario }}</code>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <hr class="my-3">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-muted small mb-1">OFICINA</h6>
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-building text-info me-2"></i>
+                                <span class="fw-semibold">{{ registro.oficina or 'No especificado' }}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted small mb-1">PISO</h6>
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-layer-group text-info me-2"></i>
+                                <span class="fw-semibold">{{ registro.piso or 'No especificado' }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Información del Sistema -->
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">
+                        <i class="fas fa-desktop text-info me-2"></i>
+                        Información del Sistema
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <h6 class="text-muted small mb-1">NOMBRE DEL PC</h6>
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-desktop text-info me-2"></i>
+                                <code class="bg-light px-2 py-1 rounded">{{ registro.nombre_pc or 'No especificado' }}</code>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <h6 class="text-muted small mb-1">SISTEMA OPERATIVO</h6>
+                            <div class="d-flex align-items-center">
+                                <i class="fab fa-windows text-info me-2"></i>
+                                <span>{{ registro.windows or 'No especificado' }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <hr class="my-3">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <h6 class="text-muted small mb-1">DIRECCIÓN IP</h6>
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-network-wired text-success me-2"></i>
+                                <code class="bg-light px-2 py-1 rounded">{{ registro.ip_pc or 'No especificado' }}</code>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <h6 class="text-muted small mb-1">DIRECCIÓN MAC</h6>
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-ethernet text-success me-2"></i>
+                                <code class="bg-light px-2 py-1 rounded">{{ registro.mac_address or 'No especificado' }}</code>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hardware del Equipo -->
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">
+                        <i class="fas fa-microchip text-success me-2"></i>
+                        Hardware del Equipo
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Identificación del Hardware -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-success border-bottom pb-2 mb-3">
+                                <i class="fas fa-tag me-1"></i>
+                                Identificación del Hardware
+                            </h6>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <h6 class="text-muted small mb-1">MARCA</h6>
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-industry text-success me-2"></i>
+                                <span class="fw-bold fs-5">{{ registro.marca or 'No especificado' }}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <h6 class="text-muted small mb-1">MODELO</h6>
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-laptop text-success me-2"></i>
+                                <span class="fw-semibold">{{ registro.modelo or 'No especificado' }}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <h6 class="text-muted small mb-1">NÚMERO DE SERIE</h6>
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-barcode text-success me-2"></i>
+                                <code class="bg-light px-2 py-1 rounded">{{ registro.serie or 'No especificado' }}</code>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Componentes del Sistema -->
+                    <div class="row">
+                        <div class="col-12">
+                            <h6 class="text-success border-bottom pb-2 mb-3">
+                                <i class="fas fa-cogs me-1"></i>
+                                Componentes del Sistema
+                            </h6>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <h6 class="text-muted small mb-1">PROCESADOR</h6>
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-microchip text-warning me-2"></i>
+                                <span>{{ registro.procesador or 'No detectado' }}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <h6 class="text-muted small mb-1">MEMORIA RAM</h6>
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-memory text-warning me-2"></i>
+                                <span>{{ registro.ram or 'No detectado' }}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            <h6 class="text-muted small mb-1">DISCO</h6>
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-hdd text-warning me-2"></i>
+                                <span>{{ registro.disco or 'No detectado' }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Configuración y Seguridad -->
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">
+                        <i class="fas fa-cog text-warning me-2"></i>
+                        Configuración y Seguridad
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <h6 class="text-muted small mb-1">CONTRASEÑA</h6>
+                            <div class="d-flex align-items-center">
+                                {% if registro.contrasena %}
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-lock text-success me-2"></i>
+                                        <code class="bg-light px-2 py-1 rounded">{{ registro.contrasena }}</code>
+                                    </div>
+                                {% else %}
+                                    <span class="badge bg-secondary fs-6">
+                                        <i class="fas fa-unlock me-1"></i>No configurada
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <h6 class="text-muted small mb-1">OCS INVENTORY</h6>
+                            <div class="d-flex align-items-center">
+                                {% if registro.usa_ocs %}
+                                    <span class="badge bg-success fs-6">
+                                        <i class="fas fa-check me-1"></i>Activo
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-secondary fs-6">
+                                        <i class="fas fa-times me-1"></i>No activo
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <h6 class="text-muted small mb-1">ESTADO DEL EQUIPO</h6>
+                            <div class="d-flex align-items-center">
+                                {% set estado = registro.estado or 'Ok' %}
+                                {% if estado == 'Ok' %}
+                                    <span class="badge bg-success fs-6">
+                                        <i class="fas fa-check-circle me-1"></i>{{ estado }}
+                                    </span>
+                                {% elif estado == 'Desenchufada' %}
+                                    <span class="badge bg-warning fs-6">
+                                        <i class="fas fa-power-off me-1"></i>{{ estado }}
+                                    </span>
+                                {% elif estado == 'Baja' %}
+                                    <span class="badge bg-danger fs-6">
+                                        <i class="fas fa-times-circle me-1"></i>{{ estado }}
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-secondary fs-6">{{ estado }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% if registro.observaciones %}
+                    <hr class="my-3">
+                    <div class="row">
+                        <div class="col-12">
+                            <h6 class="text-muted small mb-2">OBSERVACIONES</h6>
+                            <div class="alert alert-light border-start border-warning border-3">
+                                <i class="fas fa-comment-alt text-warning me-2"></i>
+                                {{ registro.observaciones }}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-3">
+            <!-- Estado del Registro -->
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>Estado del Registro
+                    </h6>
+                </div>
+                <div class="card-body text-center">
+                    {% if registro.is_duplicate %}
+                        <div class="status-badge mb-3">
+                            <i class="fas fa-exclamation-triangle fa-3x text-danger mb-2"></i>
+                            <h6 class="text-danger">DUPLICADO</h6>
+                            <p class="small text-muted mb-0">Conflictos detectados</p>
+                        </div>
+                    {% else %}
+                        <div class="status-badge mb-3">
+                            <i class="fas fa-check-circle fa-3x text-success mb-2"></i>
+                            <h6 class="text-success">ÚNICO</h6>
+                            <p class="small text-muted mb-0">Sin conflictos</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Información Técnica -->
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">
+                        <i class="fas fa-cogs me-2"></i>Información Técnica
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <small class="text-muted d-block">ID del Registro</small>
+                        <span class="badge bg-secondary">#{{ registro.id }}</span>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <small class="text-muted d-block">Estado de Sincronización</small>
+                        {% if registro.sync_status == 'synced' %}
+                            <span class="badge bg-success">
+                                <i class="fas fa-check-circle me-1"></i>Sincronizado
+                            </span>
+                        {% else %}
+                            <span class="badge bg-warning">
+                                <i class="fas fa-clock me-1"></i>Pendiente
+                            </span>
+                        {% endif %}
+                    </div>
+                    
+                    {% if registro.fecha_creacion %}
+                    <div class="mb-3">
+                        <small class="text-muted d-block">Fecha de Creación</small>
+                        <small>{{ registro.fecha_creacion[:10] }}</small>
+                    </div>
+                    {% endif %}
+                    
+                    {% if registro.fecha_modificacion %}
+                    <div class="mb-0">
+                        <small class="text-muted d-block">Última Modificación</small>
+                        <small>{{ registro.fecha_modificacion[:10] }}</small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Acciones -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">
+                        <i class="fas fa-tools me-2"></i>Acciones
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('editar_registro', registro_id=registro.id) }}" 
+                           class="btn btn-warning btn-sm">
+                            <i class="fas fa-edit me-2"></i>Editar Registro
+                        </a>
+                        
+                        {% if registro.is_duplicate %}
+                        <a href="{{ url_for('ver_duplicados') }}" class="btn btn-info btn-sm">
+                            <i class="fas fa-copy me-2"></i>Ver Duplicados
+                        </a>
+                        {% endif %}
+                        
+                        <hr class="my-2">
+                        
+                        <button type="button" class="btn btn-danger btn-sm" 
+                                onclick="confirmarEliminar({{ registro.id }}, '{{ registro.nombre_pc or 'Equipo' }}')">
+                            <i class="fas fa-trash me-2"></i>Eliminar
+                        </button>
+                        
+                        <a href="{{ url_for('index') }}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-arrow-left me-2"></i>Volver
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmación de eliminación -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle me-2"></i> Confirmar Eliminación
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-3">
+                    <i class="fas fa-exclamation-triangle fa-3x text-danger"></i>
+                </div>
+                <p>¿Está seguro de que desea eliminar el registro del equipo:</p>
+                <div class="alert alert-light border">
+                    <p class="fw-bold mb-1" id="deleteEquipmentName"></p>
+                    <small class="text-muted">ID: #{{ registro.id }}</small>
+                </div>
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Advertencia:</strong> Esta acción no se puede deshacer y afectará la base de datos compartida.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Cancelar
+                </button>
+                <form id="deleteForm" method="POST" style="display:inline;">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash me-2"></i>Eliminar Definitivamente
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function confirmarEliminar(id, nombre) {
+    document.getElementById('deleteEquipmentName').textContent = nombre;
+    document.getElementById('deleteForm').action = `/registro/${id}/eliminar`;
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+
+// Mostrar toast de confirmación si viene de una acción
+document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('updated') === 'true') {
+        mostrarToast('Registro actualizado correctamente', 'success');
+    }
+});
+</script>
+{% endblock %}

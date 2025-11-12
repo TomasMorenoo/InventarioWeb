@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Agregar Notebook - Sistema de Inventario{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="{{ url_for('notebooks_dashboard') }}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Volver al Dashboard
+    </a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="fas fa-laptop me-2"></i>Agregar Notebook desde Inventario</h4>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Información:</strong> Ingrese el número de serie de una notebook que esté en el inventario general.
+                    Al agregar la notebook aquí, se eliminará del inventario general y pasará a la gestión de notebooks.
+                </div>
+
+                <form method="POST" id="formAgregar">
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Número de Serie *</label>
+                        <div class="input-group">
+                            <input type="text" 
+                                   class="form-control form-control-lg" 
+                                   name="numero_serie" 
+                                   id="numero_serie"
+                                   placeholder="Ej: ABC123456789" 
+                                   required
+                                   value="{{ numero_serie if numero_serie }}">
+                            <button class="btn btn-outline-secondary" type="button" onclick="limpiarSerie()">
+                                <i class="fas fa-eraser"></i>
+                            </button>
+                        </div>
+                        <small class="form-text text-muted">
+                            Ingrese el número de serie exactamente como aparece en el inventario
+                        </small>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-arrow-right me-2"></i>Extraer y Agregar Notebook
+                        </button>
+                    </div>
+                </form>
+
+                <hr class="my-4">
+
+                <div class="card bg-light">
+                    <div class="card-body">
+                        <h6 class="card-title"><i class="fas fa-question-circle me-2"></i>¿Cómo funciona?</h6>
+                        <ol class="mb-0">
+                            <li>Ingrese el número de serie de una notebook del inventario general</li>
+                            <li>El sistema buscará la notebook en el inventario</li>
+                            <li>Si existe, se trasladará automáticamente a la gestión de notebooks</li>
+                            <li>La notebook desaparecerá del inventario general</li>
+                            <li>Podrá gestionar préstamos desde el dashboard de notebooks</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function limpiarSerie() {
+    document.getElementById('numero_serie').value = '';
+    document.getElementById('numero_serie').focus();
+}
+
+// Auto-mayúsculas y trim
+document.getElementById('numero_serie').addEventListener('input', function(e) {
+    this.value = this.value.toUpperCase().trim();
+});
+
+// Validación antes de enviar
+document.getElementById('formAgregar').addEventListener('submit', function(e) {
+    const serie = document.getElementById('numero_serie').value.trim();
+    if (!serie) {
+        e.preventDefault();
+        alert('Debe ingresar un número de serie');
+        return false;
+    }
+});
+</script>
+{% endblock %}

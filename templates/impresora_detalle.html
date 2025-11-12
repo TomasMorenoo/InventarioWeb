@@ -1,0 +1,904 @@
+{% extends "base.html" %}
+
+{% block title %}Detalle Impresora - CNE{% endblock %}
+
+{% block content %}
+<style>
+    .info-card {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s;
+    }
+    .info-card:hover {
+        transform: translateY(-2px);
+    }
+    .detail-label {
+        font-weight: 600;
+        color: #6c757d;
+        font-size: 0.9em;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .detail-value {
+        font-size: 1.1em;
+        color: #333;
+        margin-top: 5px;
+    }
+    .status-badge {
+        font-size: 1em;
+        padding: 8px 16px;
+        border-radius: 20px;
+    }
+    .connection-type {
+        display: inline-flex;
+        align-items: center;
+        padding: 8px 16px;
+        border-radius: 25px;
+        font-weight: 500;
+    }
+    .ip-connection {
+        background: linear-gradient(45deg, #007bff, #0056b3);
+        color: white;
+    }
+    .shared-connection {
+        background: linear-gradient(45deg, #28a745, #1e7e34);
+        color: white;
+    }
+    .marca-header {
+        border-radius: 15px;
+        padding: 30px;
+        color: white;
+        text-align: center;
+        margin-bottom: 30px;
+    }
+    .marca-kyocera { background: linear-gradient(135deg, #ff6b35, #f7931e); }
+    .marca-brother { background: linear-gradient(135deg, #007bff, #0056b3); }
+    .marca-samsung { background: linear-gradient(135deg, #6f42c1, #5a32a3); }
+    .marca-oki { background: linear-gradient(135deg, #fd7e14, #e55a00); }
+    .marca-lexmark { background: linear-gradient(135deg, #20c997, #17a085); }
+    .marca-sharp { background: linear-gradient(135deg, #dc3545, #b02a37); }
+    .marca-default { background: linear-gradient(135deg, #6c757d, #545b62); }
+    .action-buttons {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        z-index: 1000;
+    }
+    .btn-circle {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 10px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    .ip-display {
+        font-family: 'Courier New', monospace;
+        background: #f8f9fa;
+        padding: 8px 12px;
+        border-radius: 6px;
+        border: 1px solid #dee2e6;
+        display: inline-block;
+    }
+</style>
+
+<!-- Header de la Impresora -->
+<div class="marca-header marca-{{ impresora.marca.lower() if impresora.marca else 'default' }}">
+    <div class="row align-items-center">
+        <div class="col-md-2 text-center">
+            <i class="fas fa-print fa-4x"></i>
+        </div>
+        <div class="col-md-10">
+            <h1 class="mb-2">{{ impresora.marca }} {{ impresora.modelo or 'Modelo no especificado' }}</h1>
+            <h5 class="mb-3 opacity-75">
+                <i class="fas fa-map-marker-alt me-2"></i>{{ impresora.oficina }}
+                {% if impresora.piso %}
+                    - Piso {{ impresora.piso }}
+                {% endif %}
+            </h5>
+            <div class="d-flex flex-wrap gap-2">
+                {% if impresora.tiene_ip %}
+                    <span class="connection-type ip-connection">
+                        <i class="fas fa-network-wired me-2"></i>Conexión por IP
+                    </span>
+                {% else %}
+                    <span class="connection-type shared-connection">
+                        <i class="fas fa-share-alt me-2"></i>Compartida por PC
+                    </span>
+                {% endif %}
+                
+                {% set estado_class = 'success' if impresora.estado == 'Activa' else 'warning' if impresora.estado == 'Mantenimiento' else 'danger' %}
+                <span class="status-badge bg-{{ estado_class }}">
+                    <i class="fas fa-circle me-1"></i>{{ impresora.estado }}
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Información Principal -->
+    <div class="col-lg-8">
+        
+        <!-- Detalles Técnicos -->
+        <div class="card info-card mb-4">
+            <div class="card-header bg-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-cogs text-primary me-2"></i>Información Técnica
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <div class="detail-label">Marca</div>
+                        <div class="detail-value">
+                            <span class="badge bg-secondary fs-6">{{ impresora.marca }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <div class="detail-label">Modelo</div>
+                        <div class="detail-value">{{ impresora.modelo or 'No especificado' }}</div>
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <div class="detail-label">Número de Serie</div>
+                        <div class="detail-value">
+                            {% if impresora.numero_serie %}
+                                <code>{{ impresora.numero_serie }}</code>
+                            {% else %}
+                                <span class="text-muted">No registrado</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <div class="detail-label">Toner Compatible</div>
+                        <div class="detail-value">
+                            {% if impresora.toner %}
+                                <span class="badge bg-info">{{ impresora.toner }}</span>
+                            {% else %}
+                                <span class="text-muted">No especificado</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Configuración de Red -->
+        <div class="card info-card mb-4">
+            <div class="card-header bg-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-network-wired text-primary me-2"></i>Configuración de Red
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if impresora.tiene_ip %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="detail-label">Tipo de Conexión</div>
+                            <div class="detail-value">
+                                <span class="connection-type ip-connection">
+                                    <i class="fas fa-network-wired me-2"></i>IP Directa
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="detail-label">Dirección IP</div>
+                            <div class="detail-value">
+                                {% if impresora.ip_impresora %}
+                                    <span class="ip-display">{{ impresora.ip_impresora }}</span>
+                                    <button class="btn btn-sm btn-outline-primary ms-2" onclick="testConnection('{{ impresora.ip_impresora }}')">
+                                        <i class="fas fa-wifi"></i> Probar
+                                    </button>
+                                {% else %}
+                                    <span class="text-muted">No especificada</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <div class="alert alert-info d-flex align-items-center">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <div>
+                                <strong>Conexión directa:</strong> Esta impresora está conectada directamente a la red 
+                                y puede ser accedida desde cualquier equipo usando su dirección IP.
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="detail-label">Tipo de Conexión</div>
+                            <div class="detail-value">
+                                <span class="connection-type shared-connection">
+                                    <i class="fas fa-share-alt me-2"></i>Compartida
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="detail-label">PC que Comparte</div>
+                            <div class="detail-value">
+                                {% if impresora.ip_pc_madre %}
+                                    <span class="ip-display">{{ impresora.ip_pc_madre }}</span>
+                                    <button class="btn btn-sm btn-outline-success ms-2" onclick="testConnection('{{ impresora.ip_pc_madre }}')">
+                                        <i class="fas fa-desktop"></i> Verificar PC
+                                    </button>
+                                {% else %}
+                                    <span class="text-muted">No especificada</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <div class="alert alert-success d-flex align-items-center">
+                            <i class="fas fa-share-alt me-2"></i>
+                            <div>
+                                <strong>Impresora compartida:</strong> Esta impresora está conectada físicamente a una PC 
+                                y compartida en la red desde ese equipo.
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Observaciones -->
+        {% if impresora.observaciones %}
+        <div class="card info-card mb-4">
+            <div class="card-header bg-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-sticky-note text-primary me-2"></i>Observaciones
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-0">{{ impresora.observaciones }}</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Panel Lateral -->
+    <div class="col-lg-4">
+        
+        <!-- Información de Ubicación -->
+        <div class="card info-card mb-4">
+            <div class="card-header bg-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-map-marker-alt text-primary me-2"></i>Ubicación
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <div class="detail-label">Oficina</div>
+                    <div class="detail-value">
+                        <i class="fas fa-building text-muted me-2"></i>{{ impresora.oficina }}
+                    </div>
+                </div>
+                
+                {% if impresora.piso %}
+                <div class="mb-3">
+                    <div class="detail-label">Piso</div>
+                    <div class="detail-value">
+                        <i class="fas fa-layer-group text-muted me-2"></i>{{ impresora.piso }}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Estado y Control -->
+        <div class="card info-card mb-4">
+            <div class="card-header bg-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-cog text-primary me-2"></i>Estado y Control
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <div class="detail-label">Estado Actual</div>
+                    <div class="detail-value">
+                        {% set estado_class = 'success' if impresora.estado == 'Activa' else 'warning' if impresora.estado == 'Mantenimiento' else 'danger' %}
+                        <span class="status-badge bg-{{ estado_class }}">
+                            <i class="fas fa-circle me-1"></i>{{ impresora.estado }}
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <div class="detail-label">ID de Registro</div>
+                    <div class="detail-value">
+                        <code>#{{ impresora.id }}</code>
+                    </div>
+                </div>
+                
+                {% if impresora.fecha_registro %}
+                <div class="mb-3">
+                    <div class="detail-label">Fecha de Registro</div>
+                    <div class="detail-value">
+                        <i class="fas fa-calendar text-muted me-2"></i>
+                        {{ impresora.fecha_registro[:10] if impresora.fecha_registro else 'No registrada' }}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Acciones Rápidas -->
+        <div class="card info-card">
+            <div class="card-header bg-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-bolt text-primary me-2"></i>Acciones Rápidas
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    {% if impresora.tiene_ip and impresora.ip_impresora %}
+                    <button class="btn btn-outline-primary" onclick="openPrinterWeb('{{ impresora.ip_impresora }}')">
+                        <i class="fas fa-globe me-2"></i>Abrir Panel Web
+                    </button>
+                    {% endif %}
+                    
+                    <button class="btn btn-outline-info" onclick="pingPrinter()">
+                        <i class="fas fa-wifi me-2"></i>Verificar Conectividad
+                    </button>
+                    
+                    <a href="/impresoras/{{ impresora.id }}/editar" class="btn btn-warning">
+                        <i class="fas fa-edit me-2"></i>Editar Información
+                    </a>
+                    
+                    <button class="btn btn-outline-danger" onclick="confirmarEliminacion()">
+                        <i class="fas fa-trash me-2"></i>Eliminar Registro
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Botones de Acción Flotantes -->
+<div class="action-buttons">
+    <a href="/impresoras/{{ impresora.id }}/editar" class="btn btn-warning btn-circle" title="Editar">
+        <i class="fas fa-edit"></i>
+    </a>
+    <a href="/impresoras" class="btn btn-secondary btn-circle" title="Volver">
+        <i class="fas fa-arrow-left"></i>
+    </a>
+</div>
+
+<!-- Modal de Confirmación para Eliminar -->
+<div class="modal fade" id="modalEliminar" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmar Eliminación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-3">
+                    <i class="fas fa-exclamation-triangle fa-3x text-danger"></i>
+                </div>
+                <p class="text-center">¿Está seguro que desea eliminar esta impresora?</p>
+                <div class="alert alert-warning">
+                    <strong>{{ impresora.marca }} {{ impresora.modelo }}</strong><br>
+                    <small>{{ impresora.oficina }}{% if impresora.piso %} - Piso {{ impresora.piso }}{% endif %}</small>
+                </div>
+                <p class="text-danger text-center">
+                    <i class="fas fa-exclamation-triangle me-1"></i>
+                    Esta acción no se puede deshacer.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form method="POST" action="/impresoras/{{ impresora.id }}/eliminar" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash me-1"></i>Eliminar Definitivamente
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Función para confirmar eliminación
+    function confirmarEliminacion() {
+        new bootstrap.Modal(document.getElementById('modalEliminar')).show();
+    }
+    
+    // Función para probar conexión (simulada)
+    function testConnection(ip) {
+        const btn = event.target.closest('button');
+        const originalHTML = btn.innerHTML;
+        
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Probando...';
+        btn.disabled = true;
+        
+        setTimeout(() => {
+            // Simular resultado aleatorio
+            const success = Math.random() > 0.3;
+            
+            if (success) {
+                btn.innerHTML = '<i class="fas fa-check"></i> Conectado';
+                btn.className = btn.className.replace('btn-outline-', 'btn-');
+            } else {
+                btn.innerHTML = '<i class="fas fa-times"></i> Sin respuesta';
+                btn.className = btn.className.replace('btn-outline-primary', 'btn-outline-danger')
+                                                .replace('btn-outline-success', 'btn-outline-danger');
+            }
+            
+            setTimeout(() => {
+                btn.innerHTML = originalHTML;
+                btn.disabled = false;
+                btn.className = btn.className.replace('btn-danger', 'btn-outline-primary')
+                                             .replace('btn-primary', 'btn-outline-primary')
+                                             .replace('btn-success', 'btn-outline-success');
+            }, 3000);
+        }, 2000);
+    }
+    
+    // Función para abrir panel web de la impresora
+    function openPrinterWeb(ip) {
+        window.open(`http://${ip}`, '_blank');
+    }
+    
+    // Función para ping general
+    function pingPrinter() {
+        {% if impresora.tiene_ip and impresora.ip_impresora %}
+            testConnection('{{ impresora.ip_impresora }}');
+        {% elif impresora.ip_pc_madre %}
+            testConnection('{{ impresora.ip_pc_madre }}');
+        {% else %}
+            mostrarToast('No hay dirección IP configurada para probar la conectividad.', 'error');
+        {% endif %}
+    }
+</script>
+{% endblock %}
+            border-radius: 8px;
+        }
+        .ip-display {
+            font-family: 'Courier New', monospace;
+            background: #f8f9fa;
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid #dee2e6;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body class="bg-light">
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/impresoras">
+                <i class="fas fa-print me-2"></i>Inventario CNE - Impresoras
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/"><i class="fas fa-desktop me-1"></i>Computadoras</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/impresoras"><i class="fas fa-print me-1"></i>Impresoras</a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/impresoras">
+                            <i class="fas fa-arrow-left me-1"></i>Volver al Dashboard
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        
+        <!-- Alertas -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Header de la Impresora -->
+        <div class="marca-header marca-{{ impresora.marca.lower() if impresora.marca else 'default' }}">
+            <div class="row align-items-center">
+                <div class="col-md-2 text-center">
+                    <i class="fas fa-print fa-4x"></i>
+                </div>
+                <div class="col-md-10">
+                    <h1 class="mb-2">{{ impresora.marca }} {{ impresora.modelo or 'Modelo no especificado' }}</h1>
+                    <h5 class="mb-3 opacity-75">
+                        <i class="fas fa-map-marker-alt me-2"></i>{{ impresora.oficina }}
+                        {% if impresora.piso %}
+                            - Piso {{ impresora.piso }}
+                        {% endif %}
+                    </h5>
+                    <div class="d-flex flex-wrap gap-2">
+                        {% if impresora.tiene_ip %}
+                            <span class="connection-type ip-connection">
+                                <i class="fas fa-network-wired me-2"></i>Conexión por IP
+                            </span>
+                        {% else %}
+                            <span class="connection-type shared-connection">
+                                <i class="fas fa-share-alt me-2"></i>Compartida por PC
+                            </span>
+                        {% endif %}
+                        
+                        {% set estado_class = 'success' if impresora.estado == 'Activa' else 'warning' if impresora.estado == 'Mantenimiento' else 'danger' %}
+                        <span class="status-badge bg-{{ estado_class }}">
+                            <i class="fas fa-circle me-1"></i>{{ impresora.estado }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Información Principal -->
+            <div class="col-lg-8">
+                
+                <!-- Detalles Técnicos -->
+                <div class="card info-card mb-4">
+                    <div class="card-header bg-white">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-cogs text-primary me-2"></i>Información Técnica
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <div class="detail-label">Marca</div>
+                                <div class="detail-value">
+                                    <span class="badge bg-secondary fs-6">{{ impresora.marca }}</span>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <div class="detail-label">Modelo</div>
+                                <div class="detail-value">{{ impresora.modelo or 'No especificado' }}</div>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <div class="detail-label">Número de Serie</div>
+                                <div class="detail-value">
+                                    {% if impresora.numero_serie %}
+                                        <code>{{ impresora.numero_serie }}</code>
+                                    {% else %}
+                                        <span class="text-muted">No registrado</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <div class="detail-label">Toner Compatible</div>
+                                <div class="detail-value">
+                                    {% if impresora.toner %}
+                                        <span class="badge bg-info">{{ impresora.toner }}</span>
+                                    {% else %}
+                                        <span class="text-muted">No especificado</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Configuración de Red -->
+                <div class="card info-card mb-4">
+                    <div class="card-header bg-white">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-network-wired text-primary me-2"></i>Configuración de Red
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        {% if impresora.tiene_ip %}
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="detail-label">Tipo de Conexión</div>
+                                    <div class="detail-value">
+                                        <span class="connection-type ip-connection">
+                                            <i class="fas fa-network-wired me-2"></i>IP Directa
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="detail-label">Dirección IP</div>
+                                    <div class="detail-value">
+                                        {% if impresora.ip_impresora %}
+                                            <span class="ip-display">{{ impresora.ip_impresora }}</span>
+                                            <button class="btn btn-sm btn-outline-primary ms-2" onclick="testConnection('{{ impresora.ip_impresora }}')">
+                                                <i class="fas fa-ping-pong"></i> Probar
+                                            </button>
+                                        {% else %}
+                                            <span class="text-muted">No especificada</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <div class="alert alert-info d-flex align-items-center">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    <div>
+                                        <strong>Conexión directa:</strong> Esta impresora está conectada directamente a la red 
+                                        y puede ser accedida desde cualquier equipo usando su dirección IP.
+                                    </div>
+                                </div>
+                            </div>
+                        {% else %}
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="detail-label">Tipo de Conexión</div>
+                                    <div class="detail-value">
+                                        <span class="connection-type shared-connection">
+                                            <i class="fas fa-share-alt me-2"></i>Compartida
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="detail-label">PC que Comparte</div>
+                                    <div class="detail-value">
+                                        {% if impresora.ip_pc_madre %}
+                                            <span class="ip-display">{{ impresora.ip_pc_madre }}</span>
+                                            <button class="btn btn-sm btn-outline-success ms-2" onclick="testConnection('{{ impresora.ip_pc_madre }}')">
+                                                <i class="fas fa-desktop"></i> Verificar PC
+                                            </button>
+                                        {% else %}
+                                            <span class="text-muted">No especificada</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <div class="alert alert-success d-flex align-items-center">
+                                    <i class="fas fa-share-alt me-2"></i>
+                                    <div>
+                                        <strong>Impresora compartida:</strong> Esta impresora está conectada físicamente a una PC 
+                                        y compartida en la red desde ese equipo.
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Observaciones -->
+                {% if impresora.observaciones %}
+                <div class="card info-card mb-4">
+                    <div class="card-header bg-white">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-sticky-note text-primary me-2"></i>Observaciones
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-0">{{ impresora.observaciones }}</p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Panel Lateral -->
+            <div class="col-lg-4">
+                
+                <!-- Información de Ubicación -->
+                <div class="card info-card mb-4">
+                    <div class="card-header bg-white">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-map-marker-alt text-primary me-2"></i>Ubicación
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <div class="detail-label">Oficina</div>
+                            <div class="detail-value">
+                                <i class="fas fa-building text-muted me-2"></i>{{ impresora.oficina }}
+                            </div>
+                        </div>
+                        
+                        {% if impresora.piso %}
+                        <div class="mb-3">
+                            <div class="detail-label">Piso</div>
+                            <div class="detail-value">
+                                <i class="fas fa-layer-group text-muted me-2"></i>{{ impresora.piso }}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Estado y Control -->
+                <div class="card info-card mb-4">
+                    <div class="card-header bg-white">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-cog text-primary me-2"></i>Estado y Control
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <div class="detail-label">Estado Actual</div>
+                            <div class="detail-value">
+                                {% set estado_class = 'success' if impresora.estado == 'Activa' else 'warning' if impresora.estado == 'Mantenimiento' else 'danger' %}
+                                <span class="status-badge bg-{{ estado_class }}">
+                                    <i class="fas fa-circle me-1"></i>{{ impresora.estado }}
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="detail-label">ID de Registro</div>
+                            <div class="detail-value">
+                                <code>#{{ impresora.id }}</code>
+                            </div>
+                        </div>
+                        
+                        {% if impresora.fecha_registro %}
+                        <div class="mb-3">
+                            <div class="detail-label">Fecha de Registro</div>
+                            <div class="detail-value">
+                                <i class="fas fa-calendar text-muted me-2"></i>
+                                {{ impresora.fecha_registro[:10] if impresora.fecha_registro else 'No registrada' }}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Acciones Rápidas -->
+                <div class="card info-card">
+                    <div class="card-header bg-white">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-bolt text-primary me-2"></i>Acciones Rápidas
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            {% if impresora.tiene_ip and impresora.ip_impresora %}
+                            <button class="btn btn-outline-primary" onclick="openPrinterWeb('{{ impresora.ip_impresora }}')">
+                                <i class="fas fa-globe me-2"></i>Abrir Panel Web
+                            </button>
+                            {% endif %}
+                            
+                            <button class="btn btn-outline-info" onclick="pingPrinter()">
+                                <i class="fas fa-ping-pong me-2"></i>Verificar Conectividad
+                            </button>
+                            
+                            <a href="/impresoras/{{ impresora.id }}/editar" class="btn btn-warning">
+                                <i class="fas fa-edit me-2"></i>Editar Información
+                            </a>
+                            
+                            <button class="btn btn-outline-danger" onclick="confirmarEliminacion()">
+                                <i class="fas fa-trash me-2"></i>Eliminar Registro
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Botones de Acción Flotantes -->
+    <div class="action-buttons">
+        <a href="/impresoras/{{ impresora.id }}/editar" class="btn btn-warning btn-circle" title="Editar">
+            <i class="fas fa-edit"></i>
+        </a>
+        <a href="/impresoras" class="btn btn-secondary btn-circle" title="Volver">
+            <i class="fas fa-arrow-left"></i>
+        </a>
+    </div>
+
+    <!-- Modal de Confirmación para Eliminar -->
+    <div class="modal fade" id="modalEliminar" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirmar Eliminación</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center mb-3">
+                        <i class="fas fa-exclamation-triangle fa-3x text-danger"></i>
+                    </div>
+                    <p class="text-center">¿Está seguro que desea eliminar esta impresora?</p>
+                    <div class="alert alert-warning">
+                        <strong>{{ impresora.marca }} {{ impresora.modelo }}</strong><br>
+                        <small>{{ impresora.oficina }}{% if impresora.piso %} - Piso {{ impresora.piso }}{% endif %}</small>
+                    </div>
+                    <p class="text-danger text-center">
+                        <i class="fas fa-exclamation-triangle me-1"></i>
+                        Esta acción no se puede deshacer.
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <form method="POST" action="/impresoras/{{ impresora.id }}/eliminar" style="display: inline;">
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-trash me-1"></i>Eliminar Definitivamente
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Función para confirmar eliminación
+        function confirmarEliminacion() {
+            new bootstrap.Modal(document.getElementById('modalEliminar')).show();
+        }
+        
+        // Función para probar conexión (simulada)
+        function testConnection(ip) {
+            const btn = event.target.closest('button');
+            const originalHTML = btn.innerHTML;
+            
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Probando...';
+            btn.disabled = true;
+            
+            setTimeout(() => {
+                // Simular resultado aleatorio
+                const success = Math.random() > 0.3;
+                
+                if (success) {
+                    btn.innerHTML = '<i class="fas fa-check"></i> Conectado';
+                    btn.className = btn.className.replace('btn-outline-', 'btn-');
+                } else {
+                    btn.innerHTML = '<i class="fas fa-times"></i> Sin respuesta';
+                    btn.className = btn.className.replace('btn-outline-primary', 'btn-outline-danger')
+                                                    .replace('btn-outline-success', 'btn-outline-danger');
+                }
+                
+                setTimeout(() => {
+                    btn.innerHTML = originalHTML;
+                    btn.disabled = false;
+                    btn.className = btn.className.replace('btn-danger', 'btn-outline-primary')
+                                                 .replace('btn-primary', 'btn-outline-primary')
+                                                 .replace('btn-success', 'btn-outline-success');
+                }, 3000);
+            }, 2000);
+        }
+        
+        // Función para abrir panel web de la impresora
+        function openPrinterWeb(ip) {
+            window.open(`http://${ip}`, '_blank');
+        }
+        
+        // Función para ping general
+        function pingPrinter() {
+            {% if impresora.tiene_ip and impresora.ip_impresora %}
+                testConnection('{{ impresora.ip_impresora }}');
+            {% elif impresora.ip_pc_madre %}
+                testConnection('{{ impresora.ip_pc_madre }}');
+            {% else %}
+                alert('No hay dirección IP configurada para probar la conectividad.');
+            {% endif %}
+        }
+        
+        // Auto-hide alerts
+        setTimeout(function() {
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(alert => {
+                const bsAlert = new bootstrap.Alert(alert);
+                bsAlert.close();
+            });
+        }, 5000);
+    </script>
+</body>
+</html>

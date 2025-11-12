@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Notebook - Sistema de Inventario{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="{{ url_for('notebooks_detalle', notebook_id=notebook.id) }}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Volver al Detalle
+    </a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="fas fa-edit me-2"></i>Editar Notebook</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('notebooks_editar', notebook_id=notebook.id) }}">
+                    
+                    <!-- Número de Serie -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Número de Serie *</label>
+                        <input type="text" 
+                               class="form-control" 
+                               name="numero_serie" 
+                               value="{{ notebook.numero_serie }}"
+                               required>
+                        <small class="form-text text-muted">Campo obligatorio</small>
+                    </div>
+
+                    <!-- Nombre PC -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Nombre PC</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-desktop"></i></span>
+                            <input type="text" 
+                                   class="form-control" 
+                                   name="pc_nombre" 
+                                   value="{{ notebook.pc_nombre or '' }}"
+                                   placeholder="Ej: LAPTOP-ABC123">
+                        </div>
+                        <small class="form-text text-muted">Nombre del equipo en la red</small>
+                    </div>
+
+                    <!-- Marca -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Marca</label>
+                        <input type="text" 
+                               class="form-control" 
+                               name="marca" 
+                               value="{{ notebook.marca or '' }}"
+                               placeholder="Ej: Lenovo, HP, Dell">
+                    </div>
+
+                    <!-- Modelo -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Modelo</label>
+                        <input type="text" 
+                               class="form-control" 
+                               name="modelo" 
+                               value="{{ notebook.modelo or '' }}"
+                               placeholder="Ej: ThinkPad X1 Carbon">
+                    </div>
+
+                    <!-- IP -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Dirección IP</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-network-wired"></i></span>
+                            <input type="text" 
+                                   class="form-control" 
+                                   name="ip" 
+                                   value="{{ notebook.ip or '' }}"
+                                   placeholder="Ej: 192.168.1.100"
+                                   pattern="^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$">
+                        </div>
+                        <small class="form-text text-muted">Formato: xxx.xxx.xxx.xxx</small>
+                    </div>
+
+                    <!-- MAC Address -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">MAC Address</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-ethernet"></i></span>
+                            <input type="text" 
+                                   class="form-control" 
+                                   name="mac_address" 
+                                   value="{{ notebook.mac_address or '' }}"
+                                   placeholder="Ej: 00:1A:2B:3C:4D:5E"
+                                   pattern="^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$">
+                        </div>
+                        <small class="form-text text-muted">Formato: XX:XX:XX:XX:XX:XX o XX-XX-XX-XX-XX-XX</small>
+                    </div>
+
+                    <!-- Observaciones -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Observaciones</label>
+                        <textarea class="form-control" 
+                                  name="observaciones" 
+                                  rows="4"
+                                  placeholder="Notas adicionales sobre la notebook...">{{ notebook.observaciones or '' }}</textarea>
+                    </div>
+
+                    <!-- Estado -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Estado</label>
+                        <select class="form-select" name="estado" required>
+                            <option value="Guardada" {% if notebook.estado == 'Guardada' %}selected{% endif %}>Guardada</option>
+                            <option value="Prestada" {% if notebook.estado == 'Prestada' %}selected{% endif %}>Prestada</option>
+                            <option value="En uso interno" {% if notebook.estado == 'En uso interno' %}selected{% endif %}>En uso interno</option>
+                            <option value="En reparación" {% if notebook.estado == 'En reparación' %}selected{% endif %}>En reparación</option>
+                            <option value="Baja / Desuso" {% if notebook.estado == 'Baja / Desuso' %}selected{% endif %}>Baja / Desuso</option>
+                            <option value="Extraviada / Sin localizar" {% if notebook.estado == 'Extraviada / Sin localizar' %}selected{% endif %}>Extraviada / Sin localizar</option>
+                            <option value="Depósito" {% if notebook.estado == 'Depósito' %}selected{% endif %}>Depósito</option>
+                        </select>
+                        <small class="form-text text-muted">Cambiar el estado de la notebook</small>
+                    </div>
+
+                    <!-- Información de persona actual -->
+                    {% if notebook.estado == 'Prestada' and notebook.persona_actual %}
+                    <div class="card bg-light mb-4">
+                        <div class="card-body">
+                            <h6 class="card-title"><i class="fas fa-info-circle me-2"></i>Información de Préstamo</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <strong>Persona Actual:</strong> {{ notebook.persona_actual }}
+                                </div>
+                                {% if notebook.fecha_entrega %}
+                                <div class="col-md-6">
+                                    <strong>Fecha Entrega:</strong> {{ notebook.fecha_entrega[:10] }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            <small class="text-muted d-block mt-2">
+                                Para devolver la notebook, use el botón "Devolver" en el detalle o dashboard.
+                            </small>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Botones -->
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-save me-2"></i>Guardar Cambios
+                        </button>
+                        <a href="{{ url_for('notebooks_detalle', notebook_id=notebook.id) }}" 
+                           class="btn btn-outline-secondary">
+                            Cancelar
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-formatear MAC address
+document.querySelector('input[name="mac_address"]').addEventListener('input', function(e) {
+    let value = e.target.value.replace(/[^0-9A-Fa-f]/g, '');
+    if (value.length > 12) value = value.substr(0, 12);
+    
+    let formatted = '';
+    for (let i = 0; i < value.length; i += 2) {
+        if (i > 0) formatted += ':';
+        formatted += value.substr(i, 2);
+    }
+    e.target.value = formatted.toUpperCase();
+});
+
+// Validación del formulario
+document.querySelector('form').addEventListener('submit', function(e) {
+    const serie = document.querySelector('input[name="numero_serie"]').value.trim();
+    
+    if (!serie) {
+        e.preventDefault();
+        alert('El número de serie es obligatorio');
+        return false;
+    }
+});
+</script>
+{% endblock %}

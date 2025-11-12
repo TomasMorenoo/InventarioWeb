@@ -1,0 +1,57 @@
+:root {
+    --color-primario: #3498db;
+    --color-secundario: #2c3e50;
+    --color-alerta: #dc3545;
+    --color-success: #28a745;
+    --color-info: #17a2b8;
+    --color-warning: #ffc107;
+    --color-fondo: #f8f9fa;
+}
+
+body {
+    background-color: var(--color-fondo);
+    font-family: "Segoe UI", sans-serif;
+}
+
+.navbar {
+    background: linear-gradient(135deg, var(--color-secundario), var(--color-primario));
+}
+
+.card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.card-header.bg-primary {
+    background-color: var(--color-primario) !important;
+    color: #fff !important;
+}
+
+.card-header.bg-info {
+    background-color: var(--color-info) !important;
+    color: #fff !important;
+}
+
+.card-header.bg-danger {
+    background-color: var(--color-alerta) !important;
+    color: #fff !important;
+}
+
+.duplicate-alert {
+    border-left: 5px solid var(--color-alerta);
+    background-color: #f8d7da;
+}
+
+.btn-outline-primary {
+    border-color: var(--color-primario);
+    color: var(--color-primario);
+}
+.btn-outline-primary:hover {
+    background-color: var(--color-primario);
+    color: #fff;
+}
+
+/* Info labels y valores */
+.info-label { font-weight: 600; color: #495057; }
+.info-value { background-color: var(--color-fondo); padding: 8px 12px; border-radius: 6px; }

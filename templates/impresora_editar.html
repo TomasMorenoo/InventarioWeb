@@ -1,0 +1,581 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Impresora - CNE{% endblock %}
+
+{% block content %}
+<style>
+    .form-floating > label {
+        color: #6c757d;
+    }
+    .form-floating > .form-control:focus ~ label,
+    .form-floating > .form-control:not(:placeholder-shown) ~ label {
+        color: #0d6efd;
+    }
+    .connection-section {
+        border: 2px dashed #dee2e6;
+        border-radius: 10px;
+        padding: 20px;
+        margin: 20px 0;
+        transition: all 0.3s ease;
+    }
+    .connection-section.active {
+        border-color: #0d6efd;
+        background-color: #f8f9ff;
+    }
+    .ip-input {
+        font-family: 'Courier New', monospace;
+        background: #f8f9fa;
+    }
+    .marca-preview {
+        height: 40px;
+        width: 40px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        color: white;
+    }
+    .marca-kyocera { background: linear-gradient(45deg, #ff6b35, #f7931e); }
+    .marca-brother { background: linear-gradient(45deg, #007bff, #0056b3); }
+    .marca-samsung { background: linear-gradient(45deg, #6f42c1, #5a32a3); }
+    .marca-oki { background: linear-gradient(45deg, #fd7e14, #e55a00); }
+    .marca-lexmark { background: linear-gradient(45deg, #20c997, #17a085); }
+    .marca-sharp { background: linear-gradient(45deg, #dc3545, #b02a37); }
+    .edit-header {
+        background: linear-gradient(135deg, #ffc107, #fd7e14);
+        color: white;
+        padding: 30px;
+        border-radius: 15px;
+        margin-bottom: 30px;
+    }
+    .status-options {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+    .status-option {
+        flex: 1;
+        min-width: 120px;
+    }
+    .status-option input[type="radio"] {
+        display: none;
+    }
+    .status-option label {
+        display: block;
+        padding: 12px;
+        border: 2px solid #dee2e6;
+        border-radius: 8px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    .status-option input[type="radio"]:checked + label {
+        border-color: #007bff;
+        background-color: #f8f9ff;
+        font-weight: bold;
+    }
+    .status-activa label { border-color: #28a745; }
+    .status-activa input:checked + label { border-color: #28a745; background-color: #f8fff9; }
+    .status-mantenimiento label { border-color: #ffc107; }
+    .status-mantenimiento input:checked + label { border-color: #ffc107; background-color: #fffcf0; }
+    .status-inactiva label { border-color: #dc3545; }
+    .status-inactiva input:checked + label { border-color: #dc3545; background-color: #fff8f8; }
+    
+    .conexion-radio-group {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+    .conexion-option {
+        flex: 1;
+        position: relative;
+    }
+    .conexion-option input[type="radio"] {
+        display: none;
+    }
+    .conexion-option label {
+        display: block;
+        padding: 15px;
+        border: 2px solid #dee2e6;
+        border-radius: 10px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background: white;
+    }
+    .conexion-option input:checked + label {
+        border-color: #0d6efd;
+        background-color: #f8f9ff;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(13, 110, 253, 0.15);
+    }
+</style>
+
+<!-- Header de Edición -->
+<div class="edit-header">
+    <div class="row align-items-center">
+        <div class="col-md-2 text-center">
+            <i class="fas fa-edit fa-4x"></i>
+        </div>
+        <div class="col-md-10">
+            <h1 class="mb-2">Editando Impresora</h1>
+            <h5 class="mb-0 opacity-75">
+                {{ impresora.marca }} {{ impresora.modelo or 'Modelo no especificado' }}
+                <span class="badge bg-light text-dark ms-2">#{{ impresora.id }}</span>
+            </h5>
+        </div>
+    </div>
+</div>
+
+<!-- Formulario de Edición -->
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card shadow">
+            <div class="card-body">
+                <form method="POST" id="formEditarImpresora">
+                    
+                    <!-- Información de Ubicación -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h5 class="text-primary mb-3">
+                                <i class="fas fa-map-marker-alt me-2"></i>Ubicación
+                            </h5>
+                        </div>
+                        
+                        <div class="col-md-8 mb-3">
+                            <div class="form-floating">
+                                <select class="form-select" id="oficina" name="oficina" required>
+                                    <option value="">Seleccione una oficina...</option>
+                                    {% for oficina in oficinas %}
+                                        <option value="{{ oficina }}" {{ 'selected' if oficina == impresora.oficina else '' }}>
+                                            {{ oficina }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                                <label for="oficina">
+                                    <i class="fas fa-building me-1"></i>Oficina
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <div class="form-floating">
+                                <input type="text" class="form-control" id="piso" name="piso" readonly value="{{ impresora.piso }}">
+                                <label for="piso">
+                                    <i class="fas fa-layer-group me-1"></i>Piso
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Información de la Impresora -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h5 class="text-primary mb-3">
+                                <i class="fas fa-print me-2"></i>Información de la Impresora
+                            </h5>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <div class="form-floating">
+                                <select class="form-select" id="marca" name="marca" required>
+                                    <option value="">Seleccione una marca...</option>
+                                    {% for marca in marcas %}
+                                        <option value="{{ marca.nombre if marca is mapping else marca }}" 
+                                                {{ 'selected' if (marca.nombre if marca is mapping else marca) == impresora.marca else '' }}>
+                                            {{ marca.nombre if marca is mapping else marca }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                                <label for="marca">
+                                    <i class="fas fa-tag me-1"></i>Marca
+                                </label>
+                            </div>
+                            <div class="mt-2" id="marcaPreview">
+                                <div class="d-flex align-items-center">
+                                    <div class="marca-preview me-2 marca-{{ impresora.marca.lower().replace(' ', '-') if impresora.marca else 'default' }}" id="marcaIcon">
+                                        {{ impresora.marca[0].upper() if impresora.marca else '?' }}
+                                    </div>
+                                    <small class="text-muted">Vista previa de la marca</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <div class="form-floating">
+                                <input type="text" class="form-control" id="modelo" name="modelo" 
+                                       placeholder="Ej: FS-1041" value="{{ impresora.modelo or '' }}">
+                                <label for="modelo">
+                                    <i class="fas fa-barcode me-1"></i>Modelo
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <div class="form-floating">
+                                <input type="text" class="form-control" id="numero_serie" name="numero_serie" 
+                                       placeholder="Número de serie" value="{{ impresora.numero_serie or '' }}">
+                                <label for="numero_serie">
+                                    <i class="fas fa-hashtag me-1"></i>Número de Serie
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <div class="form-floating">
+                                <input type="text" class="form-control" id="toner" name="toner" 
+                                       placeholder="Ej: TK-1112, TN-2370" value="{{ impresora.toner or '' }}">
+                                <label for="toner">
+                                    <i class="fas fa-fill-drip me-1"></i>Toner Compatible
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- NUEVA SECCIÓN: Tipo de Conexión Simplificada -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h5 class="text-primary mb-3">
+                                <i class="fas fa-network-wired me-2"></i>Configuración de Red
+                            </h5>
+                        </div>
+                        
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Tipo de Conexión</label>
+                            <div class="conexion-radio-group">
+                                <div class="conexion-option">
+                                    <input type="radio" id="tipoRed" name="tipo_conexion" value="red" 
+                                           {{ 'checked' if impresora.tipo_conexion == 'red' else '' }}>
+                                    <label for="tipoRed">
+                                        <i class="fas fa-wifi fa-2x text-info mb-2 d-block"></i>
+                                        <strong>Con IP propia</strong><br>
+                                        <small>Conectada directamente a la red</small>
+                                    </label>
+                                </div>
+                                <div class="conexion-option">
+                                    <input type="radio" id="tipoCompartida" name="tipo_conexion" value="compartida" 
+                                           {{ 'checked' if impresora.tipo_conexion == 'compartida' else '' }}>
+                                    <label for="tipoCompartida">
+                                        <i class="fas fa-desktop fa-2x text-secondary mb-2 d-block"></i>
+                                        <strong>Compartida</strong><br>
+                                        <small>Compartida desde una PC</small>
+                                    </label>
+                                </div>
+                                <div class="conexion-option">
+                                    <input type="radio" id="tipoDesconectada" name="tipo_conexion" value="desconectada" 
+                                        {{ 'checked' if impresora.tipo_conexion == 'desconectada' else '' }}>
+                                    <label for="tipoDesconectada">
+                                        <i class="fas fa-plug fa-2x text-danger mb-2 d-block"></i>
+                                        <strong>Desconectada</strong><br>
+                                        <small>Sin conexión de red</small>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-8 mb-3">
+                            <div class="form-floating">
+                                <input type="text" class="form-control ip-input" id="ip" name="ip" 
+                                       placeholder="16.1.x.x" pattern="16\.1\.\d{1,3}\.\d{1,3}" 
+                                       value="{{ impresora.ip or '' }}">
+                                <label for="ip">
+                                    <i class="fas fa-globe me-1"></i>Dirección IP
+                                </label>
+                            </div>
+                            <div class="form-text" id="ipHelp">
+                                <!-- Texto dinámico según el tipo de conexión -->
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4 d-flex align-items-center">
+                            <button type="button" class="btn btn-outline-primary btn-sm" id="btnTestIP">
+                                <i class="fas fa-wifi me-1"></i>Probar Conexión
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Estado de la Impresora -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h5 class="text-primary mb-3">
+                                <i class="fas fa-cog me-2"></i>Estado de la Impresora
+                            </h5>
+                        </div>
+                        
+                        <div class="col-12">
+                            <label class="form-label">Estado Actual</label>
+                            <div class="status-options">
+                                <div class="status-option status-activa">
+                                    <input type="radio" id="estado_activa" name="estado" value="Activa" 
+                                           {{ 'checked' if impresora.estado == 'Activa' else '' }}>
+                                    <label for="estado_activa">
+                                        <i class="fas fa-check-circle text-success me-1"></i>
+                                        Activa
+                                    </label>
+                                </div>
+                                <div class="status-option status-mantenimiento">
+                                    <input type="radio" id="estado_mantenimiento" name="estado" value="Mantenimiento" 
+                                           {{ 'checked' if impresora.estado == 'Mantenimiento' else '' }}>
+                                    <label for="estado_mantenimiento">
+                                        <i class="fas fa-tools text-warning me-1"></i>
+                                        Mantenimiento
+                                    </label>
+                                </div>
+                                <div class="status-option status-inactiva">
+                                    <input type="radio" id="estado_inactiva" name="estado" value="Fuera de Servicio" 
+                                           {{ 'checked' if impresora.estado == 'Fuera de Servicio' else '' }}>
+                                    <label for="estado_inactiva">
+                                        <i class="fas fa-times-circle text-danger me-1"></i>
+                                        Fuera de Servicio
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Observaciones -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h5 class="text-primary mb-3">
+                                <i class="fas fa-sticky-note me-2"></i>Información Adicional
+                            </h5>
+                        </div>
+                        
+                        <div class="col-12">
+                            <div class="form-floating">
+                                <textarea class="form-control" id="observaciones" name="observaciones" 
+                                          style="height: 100px" placeholder="Observaciones adicionales...">{{ impresora.observaciones or '' }}</textarea>
+                                <label for="observaciones">
+                                    <i class="fas fa-comment me-1"></i>Observaciones
+                                </label>
+                            </div>
+                            <div class="form-text">
+                                Información adicional sobre la impresora, problemas conocidos, ubicación específica, etc.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Información de Sistema -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">
+                                        <i class="fas fa-info-circle text-muted me-2"></i>Información del Sistema
+                                    </h6>
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <small class="text-muted">ID de Registro:</small><br>
+                                            <code>#{{ impresora.id }}</code>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <small class="text-muted">Fecha de Registro:</small><br>
+                                            <small>{{ impresora.fecha_registro[:19] if impresora.fecha_registro else 'No registrada' }}</small>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <small class="text-muted">Registrado por:</small><br>
+                                            <small>{{ impresora.usuario_registro or 'Sistema' }}</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botones de Acción -->
+                    <div class="row">
+                        <div class="col-12">
+                            <hr>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <a href="/impresoras/{{ impresora.id }}" class="btn btn-secondary me-2">
+                                        <i class="fas fa-times me-1"></i>Cancelar
+                                    </a>
+                                    <a href="/impresoras" class="btn btn-outline-secondary">
+                                        <i class="fas fa-list me-1"></i>Ir al Dashboard
+                                    </a>
+                                </div>
+                                <div>
+                                    <button type="button" class="btn btn-outline-danger me-2" onclick="confirmarEliminacion()">
+                                        <i class="fas fa-trash me-1"></i>Eliminar
+                                    </button>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save me-1"></i>Guardar Cambios
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Confirmación para Eliminar -->
+<div class="modal fade" id="modalEliminar" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmar Eliminación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-3">
+                    <i class="fas fa-exclamation-triangle fa-3x text-danger"></i>
+                </div>
+                <p class="text-center">¿Está seguro que desea eliminar esta impresora?</p>
+                <div class="alert alert-warning">
+                    <strong>{{ impresora.marca }} {{ impresora.modelo }}</strong><br>
+                    <small>{{ impresora.oficina }}{% if impresora.piso %} - Piso {{ impresora.piso }}{% endif %}</small>
+                </div>
+                <p class="text-danger text-center">
+                    <i class="fas fa-exclamation-triangle me-1"></i>
+                    Esta acción no se puede deshacer.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form method="POST" action="/impresoras/{{ impresora.id }}/eliminar" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash me-1"></i>Eliminar Definitivamente
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const oficinaSelect = document.getElementById('oficina');
+        const pisoInput = document.getElementById('piso');
+        const tipoRed = document.getElementById('tipoRed');
+        const tipoCompartida = document.getElementById('tipoCompartida');
+        const ipInput = document.getElementById('ip');
+        const ipHelp = document.getElementById('ipHelp');
+        const marcaSelect = document.getElementById('marca');
+        const marcaIcon = document.getElementById('marcaIcon');
+        
+        // Función para actualizar el texto de ayuda según el tipo de conexión
+        function actualizarTextoAyuda() {
+            if (tipoRed.checked) {
+                ipHelp.textContent = 'IP propia de la impresora conectada directamente a la red';
+                ipHelp.className = 'form-text text-info';
+            } else if (tipoCompartida.checked) {
+                ipHelp.textContent = 'IP de la PC desde la cual se comparte la impresora';
+                ipHelp.className = 'form-text text-secondary';
+            }
+        }
+        
+        // Cargar piso automáticamente al seleccionar oficina
+        oficinaSelect.addEventListener('change', function() {
+            const oficinaNombre = this.value;
+            if (oficinaNombre) {
+                fetch(`/api/oficina/${encodeURIComponent(oficinaNombre)}/piso`)
+                    .then(response => response.json())
+                    .then(data => {
+                        pisoInput.value = data.piso || '';
+                    })
+                    .catch(error => {
+                        console.error('Error obteniendo piso:', error);
+                        pisoInput.value = '';
+                    });
+            } else {
+                pisoInput.value = '';
+            }
+        });
+        
+        // Event listeners para tipo de conexión
+        tipoRed.addEventListener('change', actualizarTextoAyuda);
+        tipoCompartida.addEventListener('change', actualizarTextoAyuda);
+        
+        // Preview de marca
+        marcaSelect.addEventListener('change', function() {
+            const marca = this.value.toLowerCase();
+            if (marca) {
+                marcaIcon.className = `marca-preview me-2 marca-${marca}`;
+                marcaIcon.textContent = marca.charAt(0).toUpperCase();
+            } else {
+                marcaIcon.className = 'marca-preview me-2 marca-default';
+                marcaIcon.textContent = '?';
+            }
+        });
+        
+        // Validación de IP
+        function validarIP(input) {
+            const valor = input.value;
+            const patron = /^16\.1\.\d{1,3}\.\d{1,3}$/;
+            
+            if (valor && !patron.test(valor)) {
+                input.classList.add('is-invalid');
+                return false;
+            } else {
+                input.classList.remove('is-invalid');
+                if (valor) input.classList.add('is-valid');
+                return true;
+            }
+        }
+        
+        ipInput.addEventListener('blur', function() {
+            validarIP(this);
+        });
+        
+        // Botón de prueba (simulado)
+        document.getElementById('btnTestIP').addEventListener('click', function() {
+            const ip = ipInput.value;
+            if (ip && validarIP(ipInput)) {
+                this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Probando...';
+                this.disabled = true;
+                
+                setTimeout(() => {
+                    this.innerHTML = '<i class="fas fa-check me-1"></i>Conexión OK';
+                    this.className = 'btn btn-success btn-sm';
+                    setTimeout(() => {
+                        this.innerHTML = '<i class="fas fa-wifi me-1"></i>Probar Conexión';
+                        this.className = 'btn btn-outline-primary btn-sm';
+                        this.disabled = false;
+                    }, 2000);
+                }, 1500);
+            }
+        });
+        
+        // Validación del formulario
+        document.getElementById('formEditarImpresora').addEventListener('submit', function(e) {
+            let valid = true;
+            
+            // Validar campos requeridos
+            const requiredFields = this.querySelectorAll('[required]');
+            requiredFields.forEach(field => {
+                if (!field.value.trim()) {
+                    field.classList.add('is-invalid');
+                    valid = false;
+                } else {
+                    field.classList.remove('is-invalid');
+                }
+            });
+            
+            // Validar IP si está presente
+            if (ipInput.value && !validarIP(ipInput)) {
+                valid = false;
+            }
+            
+            if (!valid) {
+                e.preventDefault();
+                alert('Por favor, complete todos los campos requeridos correctamente.');
+            }
+        });
+        
+        // Inicializar texto de ayuda
+        actualizarTextoAyuda();
+    });
+    
+    // Función para confirmar eliminación
+    function confirmarEliminacion() {
+        new bootstrap.Modal(document.getElementById('modalEliminar')).show();
+    }
+</script>
+{% endblock %}

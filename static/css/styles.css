@@ -1,0 +1,126 @@
+/* ======= VARIABLES DE COLOR ======= */
+:root {
+    --color-bg: #1a202c;        /* Fondo principal */
+    --color-bg-light: #2d3748;  /* Contenedores / cards */
+    --color-primary: #4299e1;   /* Celestito */
+    --color-primary-hover: #3182ce;
+    --color-accent: #63b3ed;    /* Celeste más claro */
+    --color-text: #e2e8f0;      /* Texto claro */
+    --color-text-muted: #a0aec0; /* Texto secundario */
+    --color-border: #4a5568;
+}
+
+/* ======= RESET ======= */
+body, html {
+    margin: 0;
+    padding: 0;
+    font-family: "Segoe UI", Roboto, Arial, sans-serif;
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    height: 100%;
+}
+
+/* ======= NAVBAR ======= */
+.navbar {
+    background-color: var(--color-bg-light) !important;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.navbar-brand {
+    color: var(--color-primary) !important;
+    font-weight: bold;
+}
+
+.navbar-nav .nav-link {
+    color: var(--color-text-muted) !important;
+    transition: color 0.2s ease;
+}
+
+.navbar-nav .nav-link:hover {
+    color: var(--color-primary) !important;
+}
+
+/* ======= CARDS ======= */
+.card {
+    background-color: var(--color-bg-light);
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    padding: 1rem;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.card h5, .card h4 {
+    color: var(--color-accent);
+}
+
+/* ======= BOTONES ======= */
+.btn-primary {
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
+    color: #fff;
+    font-weight: 500;
+    border-radius: 8px;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.btn-primary:hover {
+    background-color: var(--color-primary-hover);
+    border-color: var(--color-primary-hover);
+    transform: scale(1.02);
+}
+
+.btn-secondary {
+    background-color: var(--color-border);
+    border-color: var(--color-border);
+    color: var(--color-text);
+    border-radius: 8px;
+}
+
+.btn-secondary:hover {
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
+    color: #fff;
+}
+
+/* ======= TABLAS ======= */
+.table {
+    color: var(--color-text);
+    border-color: var(--color-border);
+}
+
+.table thead {
+    background-color: var(--color-bg-light);
+    color: var(--color-accent);
+}
+
+.table-striped tbody tr:nth-of-type(odd) {
+    background-color: rgba(66, 153, 225, 0.05);
+}
+
+/* ======= FORMS ======= */
+.form-control {
+    background-color: var(--color-bg-light);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+}
+
+.form-control:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px rgba(66, 153, 225, 0.25);
+}
+
+/* ======= FOOTER ======= */
+footer {
+    margin-top: 3rem;
+    padding: 1rem;
+    text-align: center;
+    color: var(--color-text-muted);
+    border-top: 1px solid var(--color-border);
+}

@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block title %}Estadísticas Impresoras - CNE{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+
+    <!-- Header -->
+    <div class="stats-header p-4 mb-4 rounded text-white" style="background: linear-gradient(135deg, #6f42c1, #5a32a3);">
+        <div class="row align-items-center">
+            <div class="col-md-2 text-center"><i class="fas fa-chart-line fa-4x"></i></div>
+            <div class="col-md-10">
+                <h1>Estadísticas de Impresoras</h1>
+                <h5 class="opacity-75">Análisis completo del inventario de impresoras</h5>
+            </div>
+        </div>
+    </div>
+
+    <!-- Métricas Principales -->
+    <div class="row g-3 mb-4">
+        {% set metricas = [
+            {'label': 'Total Impresoras', 'icon': 'fas fa-print', 'value': stats.total_impresoras, 'bg': '#f8f9fa', 'color': '#007bff'},
+            {'label': 'Con IP Propia', 'icon': 'fas fa-network-wired', 'value': stats.conectividad['Con IP'], 'bg': '#007bff', 'color': 'white'},
+            {'label': 'Compartidas', 'icon': 'fas fa-share-alt', 'value': stats.conectividad['Compartidas'], 'bg': '#28a745', 'color': 'white'},
+            {'label': 'Activas', 'icon': 'fas fa-check-circle', 'value': stats.por_estado['Activa'], 'bg': '#ffc107', 'color': 'white'}
+        ] %}
+        {% for m in metricas %}
+        <div class="col-md-3">
+            <div class="metric-card text-center rounded p-4" style="background: {{ m.bg }}; color: {{ m.color }};">
+                <div class="metric-number">{{ m.value or 0 }}</div>
+                <div class="metric-label"><i class="{{ m.icon }} me-1"></i>{{ m.label }}</div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Gráficos -->
+    <div class="row g-4">
+        <!-- Distribución por Marca -->
+        <div class="col-lg-6">
+            <div class="chart-container p-3 bg-white rounded shadow-sm">
+                <h5><i class="fas fa-tag text-primary me-2"></i>Distribución por Marca</h5>
+                <canvas id="marcasChart"></canvas>
+            </div>
+        </div>
+        <!-- Estado -->
+        <div class="col-lg-6">
+            <div class="chart-container p-3 bg-white rounded shadow-sm">
+                <h5><i class="fas fa-cog text-primary me-2"></i>Estado de Impresoras</h5>
+                <canvas id="estadosChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mt-3">
+        <!-- Tipo de Conexión -->
+        <div class="col-lg-6">
+            <div class="chart-container p-3 bg-white rounded shadow-sm">
+                <h5><i class="fas fa-network-wired text-primary me-2"></i>Tipo de Conexión</h5>
+                <canvas id="conexionChart"></canvas>
+            </div>
+        </div>
+        <!-- Top Oficinas -->
+        <div class="col-lg-6">
+            <div class="chart-container p-3 bg-white rounded shadow-sm">
+                <h5><i class="fas fa-building text-primary me-2"></i>Top Oficinas</h5>
+                <canvas id="oficinasChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Acciones Rápidas -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card stats-card p-3 text-center">
+                <h5 class="mb-3"><i class="fas fa-bolt text-primary me-2"></i>Acciones Rápidas</h5>
+                <div class="btn-group flex-wrap">
+                    <a href="/impresoras" class="btn btn-primary"><i class="fas fa-list me-1"></i>Ver Inventario</a>
+                    <a href="/impresoras/nueva" class="btn btn-success"><i class="fas fa-plus me-1"></i>Agregar Impresora</a>
+                    <a href="/impresoras/exportar" class="btn btn-info"><i class="fas fa-download me-1"></i>Exportar Datos</a>
+                    <button class="btn btn-warning" id="btnActualizar"><i class="fas fa-sync me-1"></i>Actualizar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const brandColors = {'Kyocera':'#ff6b35','Brother':'#007bff','Samsung':'#6f42c1','OKI':'#fd7e14','Lexmark':'#20c997','Sharp':'#dc3545'};
+
+// Función para crear gráficos
+function crearDoughnut(ctx, labels, data, colors) {
+    return new Chart(ctx, {
+        type: 'doughnut',
+        data: {labels: labels, datasets:[{data:data, backgroundColor: colors}]},
+        options: {responsive:true, plugins:{legend:{position:'bottom', labels:{usePointStyle:true}}}}
+    });
+}
+
+function crearPie(ctx, labels, data, colors) {
+    return new Chart(ctx, {
+        type: 'pie',
+        data: {labels: labels, datasets:[{data:data, backgroundColor: colors}]},
+        options: {responsive:true, plugins:{legend:{position:'bottom', labels:{usePointStyle:true}}}}
+    });
+}
+
+function crearBar(ctx, labels, data, color){
+    return new Chart(ctx, {
+        type:'bar',
+        data:{labels:labels, datasets:[{label:'Impresoras', data:data, backgroundColor:color, borderRadius:4}]},
+        options:{responsive:true, scales:{y:{beginAtZero:true, ticks:{stepSize:1}}}, plugins:{legend:{display:false}}}
+    });
+}
+
+// Datos de gráficos
+const marcasCtx = document.getElementById('marcasChart').getContext('2d');
+crearDoughnut(marcasCtx,
+    [{% for m in stats.por_marca.keys() %}'{{ m }}'{% if not loop.last %},{% endif %}{% endfor %}],
+    [{% for c in stats.por_marca.values() %}{{ c }}{% if not loop.last %},{% endif %}{% endfor %}],
+    [{% for m in stats.por_marca.keys() %}'{{ brandColors[m] or "#6c757d" }}'{% if not loop.last %},{% endif %}{% endfor %}]
+);
+
+const estadosCtx = document.getElementById('estadosChart').getContext('2d');
+crearPie(estadosCtx,
+    [{% for e in stats.por_estado.keys() %}'{{ e }}'{% if not loop.last %},{% endif %}{% endfor %}],
+    [{% for c in stats.por_estado.values() %}{{ c }}{% if not loop.last %},{% endif %}{% endfor %}],
+    ['#28a745','#ffc107','#dc3545']
+);
+
+const conexionCtx = document.getElementById('conexionChart').getContext('2d');
+crearDoughnut(conexionCtx,
+    ['Con IP','Compartidas'],
+    [{{ stats.conectividad['Con IP'] or 0 }}, {{ stats.conectividad['Compartidas'] or 0 }}],
+    ['#007bff','#28a745']
+);
+
+const oficinasCtx = document.getElementById('oficinasChart').getContext('2d');
+const topOficinas = [{% for o,c in stats.por_oficina.items() if loop.index <= 5 %}{oficina:'{{ o }}',cantidad:{{ c }}}{% if not loop.last %},{% endif %}{% endfor %}];
+crearBar(oficinasCtx, topOficinas.map(i=>i.oficina), topOficinas.map(i=>i.cantidad),'#007bff');
+
+// Actualización vía AJAX
+document.getElementById('btnActualizar').addEventListener('click', async function(){
+    const btn = this;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Actualizando...';
+    btn.disabled = true;
+    try {
+        const res = await fetch('/impresoras/estadisticas/json');
+        if(res.ok){
+            const data = await res.json();
+            location.reload(); // Puedes reemplazar por actualización dinámica de gráficos si quieres
+        } else {
+            alert('Error al actualizar estadísticas.');
+        }
+    } catch(err){
+        alert('Error al actualizar: '+err);
+    } finally {
+        btn.innerHTML = '<i class="fas fa-sync me-1"></i>Actualizar';
+        btn.disabled = false;
+    }
+});
+</script>
+{% endblock %}

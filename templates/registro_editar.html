@@ -1,0 +1,510 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Registro #{{ registro.id }} - Sistema de Inventario{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('ver_registro', registro_id=registro.id) }}">Registro #{{ registro.id }}</a></li>
+            <li class="breadcrumb-item active">Editar</li>
+        </ol>
+    </nav>
+
+    <!-- Alerta de duplicado -->
+    {% if registro.is_duplicate %}
+    <div class="alert duplicate-alert" role="alert">
+        <h6><i class="fas fa-exclamation-triangle me-2"></i>Editando Registro Duplicado</h6>
+        <p class="mb-0">Este registro está marcado como posible duplicado. Verifique los datos antes de guardar.</p>
+    </div>
+    {% endif %}
+
+    <div class="row">
+        <div class="col-lg-10 mx-auto">
+            <div class="card">
+                <div class="card-header bg-gradient-warning text-dark">
+                    <h4 class="mb-0"><i class="fas fa-edit me-2"></i>Editar Registro #{{ registro.id }}</h4>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST" id="editForm">
+                        <!-- Información del registro -->
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Registro creado:</strong> {{ registro.fecha_creacion[:19] if registro.fecha_creacion else 'Fecha no disponible' }}
+                        </div>
+
+                        <!-- Empleado y Ubicación -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h5 class="text-primary mb-3">
+                                    <i class="fas fa-user me-2"></i>Empleado y Ubicación
+                                </h5>
+                            </div>
+                            <!-- PERSONA = campo "usuario" de BD (el que está vacío y necesita llenarse) -->
+                            <div class="col-md-6 mb-3">
+                                <label for="usuario_persona" class="form-label">Persona *</label>
+                                <input type="text" class="form-control" id="usuario_persona" name="usuario_persona" 
+                                    value="{{ registro.usuario_persona or '' }}" required
+                                    placeholder="Nombre de la persona que usa el equipo">
+                                <div class="form-text">Persona que utiliza el equipo físicamente</div>
+                            </div>
+                            <!-- USUARIO RED = campo "pc_usuario" de BD (el que tiene "callcenter") -->
+                            <div class="col-md-6 mb-3">
+                                <label for="pc_usuario" class="form-label">Usuario Red</label>
+                                <input type="text" class="form-control" id="pc_usuario" name="pc_usuario" 
+                                    value="{{ registro.pc_usuario or '' }}" 
+                                    placeholder="Usuario de dominio/red">
+                                <div class="form-text">Cuenta de usuario de red/dominio</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="oficina" class="form-label">Oficina *</label>
+                                <select class="form-select" id="oficina" name="oficina" required>
+                                    <option value="">Seleccione una oficina</option>
+                                    {% for oficina in oficinas %}
+                                    <option value="{{ oficina }}" {% if oficina == registro.oficina %}selected{% endif %}>
+                                        {{ oficina }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="piso" class="form-label">Piso</label>
+                                <select class="form-select" id="piso" name="piso">
+                                    <option value="">Seleccionar piso...</option>
+                                    <option value="-3">Piso -3</option>
+                                    <option value="-2">Piso -2</option>
+                                    <option value="-1">Piso -1</option>
+                                    <option value="0">Piso 0 (Planta Baja)</option>
+                                    <option value="1">Piso 1</option>
+                                    <option value="2">Piso 2</option>
+                                    <option value="3">Piso 3</option>
+                                    <option value="4">Piso 4</option>
+                                </select>
+                                <div class="form-text">
+                                    <span id="pisoInfo">Seleccione primero una oficina para obtener el piso automáticamente</span>
+                                </div>
+                            </div>
+
+                        <!-- Información del Sistema -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h5 class="text-info mb-3">
+                                    <i class="fas fa-desktop me-2"></i>Información del Sistema
+                                </h5>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="nombre_pc" class="form-label">Nombre PC</label>
+                                <input type="text" class="form-control" id="nombre_pc" name="nombre_pc" 
+                                       value="{{ registro.nombre_pc or '' }}" placeholder="Nombre del equipo">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="ip_pc" class="form-label">IP PC</label>
+                                <input type="text" class="form-control" id="ip_pc" name="ip_pc" 
+                                       value="{{ registro.ip_pc or '' }}" placeholder="192.168.1.100" 
+                                       pattern="^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$">
+                                <div class="form-text">Formato: 192.168.1.100</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="mac_address" class="form-label">MAC Address</label>
+                                <input type="text" class="form-control" id="mac_address" name="mac_address" 
+                                       value="{{ registro.mac_address or '' }}" 
+                                       placeholder="00:11:22:33:44:55"
+                                       pattern="^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$">
+                                <div class="form-text">Formato: 00:11:22:33:44:55</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="windows" class="form-label">Windows</label>
+                                <input type="text" class="form-control" id="windows" name="windows" 
+                                       value="{{ registro.windows or '' }}" placeholder="Versión de Windows">
+                            </div>
+                        </div>
+
+                        <!-- Hardware del Equipo -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h5 class="text-success mb-3">
+                                    <i class="fas fa-microchip me-2"></i>Hardware del Equipo
+                                </h5>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="marca" class="form-label">Marca *</label>
+                                <input type="text" class="form-control" id="marca" name="marca" 
+                                       value="{{ registro.marca or '' }}" required placeholder="Marca del equipo">
+                                <div class="form-text">Detectado automáticamente por la aplicación</div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="modelo" class="form-label">Modelo *</label>
+                                <input type="text" class="form-control" id="modelo" name="modelo" 
+                                       value="{{ registro.modelo or '' }}" required placeholder="Modelo del equipo">
+                                <div class="form-text">Detectado automáticamente por la aplicación</div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="serie" class="form-label">Número de Serie *</label>
+                                <input type="text" class="form-control" id="serie" name="serie" 
+                                       value="{{ registro.serie or '' }}" required placeholder="Número de serie del equipo">
+                                <div class="form-text">Detectado automáticamente por la aplicación</div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="procesador" class="form-label">Procesador</label>
+                                <input type="text" class="form-control" id="procesador" name="procesador" 
+                                       value="{{ registro.procesador or '' }}" placeholder="Intel Core i5, AMD Ryzen, etc.">
+                                <div class="form-text">Detectado automáticamente por la aplicación</div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="ram" class="form-label">Memoria RAM</label>
+                                <input type="text" class="form-control" id="ram" name="ram" 
+                                       value="{{ registro.ram or '' }}" placeholder="8GB, 16GB, etc.">
+                                <div class="form-text">Detectada automáticamente por la aplicación</div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="disco" class="form-label">Disco</label>
+                                <input type="text" class="form-control" id="disco" name="disco" 
+                                       value="{{ registro.disco or '' }}" placeholder="SSD 256GB, HDD 1TB, etc.">
+                                <div class="form-text">Detectado automáticamente por la aplicación</div>
+                            </div>
+                        </div>
+
+                        <!-- Configuración y Seguridad -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h5 class="text-warning mb-3">
+                                    <i class="fas fa-cog me-2"></i>Configuración y Seguridad
+                                </h5>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="contrasena" class="form-label">Contraseña</label>
+                                <div class="input-group">
+                                    <input type="password" class="form-control" id="contrasena" name="contrasena" 
+                                           value="{{ registro.contrasena or '' }}" placeholder="Contraseña del equipo">
+                                    <button class="btn btn-outline-secondary" type="button" onclick="togglePassword()">
+                                        <i class="fas fa-eye" id="toggleIcon"></i>
+                                    </button>
+                                </div>
+                                <div class="form-text">Contraseña de acceso al equipo</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Usa OCS Inventory</label>
+                                <div class="form-check form-switch mt-2">
+                                    <input class="form-check-input" type="checkbox" id="usa_ocs" name="usa_ocs" 
+                                           {% if registro.usa_ocs %}checked{% endif %}>
+                                    <label class="form-check-label" for="usa_ocs">
+                                        <span id="ocsLabel">{% if registro.usa_ocs %}Sí, usa OCS{% else %}No usa OCS{% endif %}</span>
+                                    </label>
+                                </div>
+                                <div class="form-text">Sistema de inventario automático OCS</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="estado" class="form-label">Estado del Equipo</label>
+                                <select class="form-select" id="estado" name="estado">
+                                    <option value="Ok" {% if (registro.estado or 'Ok') == 'Ok' %}selected{% endif %}>Ok</option>
+                                    <option value="Desenchufada" {% if registro.estado == 'Desenchufada' %}selected{% endif %}>Desenchufada</option>
+                                    <option value="Baja" {% if registro.estado == 'Baja' %}selected{% endif %}>Baja</option>
+                                </select>
+                                <div class="form-text">Estado operativo del equipo</div>
+                            </div>
+                            <div class="col-md-12 mb-3">
+                                <label for="observaciones" class="form-label">Observaciones</label>
+                                <textarea class="form-control" id="observaciones" name="observaciones" rows="3" 
+                                          placeholder="Notas adicionales, problemas, configuraciones especiales...">{{ registro.observaciones or '' }}</textarea>
+                            </div>
+                        </div>
+
+                        <!-- Botones -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('ver_registro', registro_id=registro.id) }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Cancelar
+                            </a>
+                            <div>
+                                <button type="button" class="btn btn-outline-warning me-2" onclick="resetearCambios()">
+                                    <i class="fas fa-undo me-2"></i>Revertir
+                                </button>
+                                <button type="submit" class="btn btn-success">
+                                    <i class="fas fa-save me-2"></i>Guardar Cambios
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Card -->
+    <div class="row mt-4">
+        <div class="col-lg-10 mx-auto">
+            <div class="card border-info">
+                <div class="card-body text-center">
+                    <h6 class="card-title text-info">
+                        <i class="fas fa-info-circle me-2"></i>Estado de Validación
+                    </h6>
+                    <p class="card-text mb-0" id="validationStatus">Verificando cambios...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('editForm');
+    const validationStatus = document.getElementById('validationStatus');
+    const ipInput = document.getElementById('ip_pc');
+    const macInput = document.getElementById('mac_address');
+    const oficinaBelect = document.getElementById('oficina');
+    const pisoSelect = document.getElementById('piso');
+    const pisoInfo = document.getElementById('pisoInfo');
+    const ocsSwitch = document.getElementById('usa_ocs');
+    const ocsLabel = document.getElementById('ocsLabel');
+
+    // DATOS ORIGINALES - CORREGIDOS
+    const originalData = {
+        usuario_persona: '{{ registro.usuario_persona or "" }}',
+        pc_usuario: '{{ registro.pc_usuario or "" }}',
+        oficina: '{{ registro.oficina or "" }}',
+        piso: '{{ registro.piso or "" }}',
+        nombre_pc: '{{ registro.nombre_pc or "" }}',
+        ip_pc: '{{ registro.ip_pc or "" }}',
+        mac_address: '{{ registro.mac_address or "" }}',
+        windows: '{{ registro.windows or "" }}',
+        marca: '{{ registro.marca or "" }}',
+        modelo: '{{ registro.modelo or "" }}',
+        serie: '{{ registro.serie or "" }}',
+        procesador: '{{ registro.procesador or "" }}',
+        ram: '{{ registro.ram or "" }}',
+        disco: '{{ registro.disco or "" }}',
+        contrasena: '{{ registro.contrasena or "" }}',
+        usa_ocs: {{ 'true' if registro.usa_ocs else 'false' }},
+        estado: '{{ registro.estado or "Ok" }}',
+        observaciones: '{{ registro.observaciones or "" }}'
+    };
+
+    // FUNCIÓN PARA OBTENER PISO DE UNA OFICINA
+    async function obtenerPisoPorOficina(nombreOficina) {
+        if (!nombreOficina) return null;
+        
+        try {
+            const response = await fetch(`/api/oficina/${encodeURIComponent(nombreOficina)}/piso`);
+            if (response.ok) {
+                const data = await response.json();
+                return data.piso;
+            }
+        } catch (error) {
+            console.error('Error obteniendo piso:', error);
+        }
+        return null;
+    }
+
+    // SINCRONIZAR OFICINA CON PISO
+    async function sincronizarOficinaPiso(nombreOficina, mostrarInfo = true) {
+        if (!nombreOficina) {
+            pisoSelect.value = '';
+            if (mostrarInfo) {
+                pisoInfo.textContent = 'Seleccione primero una oficina para obtener el piso automáticamente';
+                pisoInfo.className = 'form-text text-muted';
+            }
+            return;
+        }
+
+        if (mostrarInfo) {
+            pisoInfo.textContent = '🔄 Consultando piso de la oficina...';
+            pisoInfo.className = 'form-text text-info';
+        }
+
+        const piso = await obtenerPisoPorOficina(nombreOficina);
+        
+        if (piso !== null) {
+            pisoSelect.value = piso.toString();
+            if (mostrarInfo) {
+                pisoInfo.textContent = `✅ Piso ${piso} detectado automáticamente para ${nombreOficina}`;
+                pisoInfo.className = 'form-text text-success';
+            }
+        } else {
+            pisoSelect.value = '';
+            if (mostrarInfo) {
+                pisoInfo.textContent = `⚠️ No se pudo obtener el piso para ${nombreOficina}. Seleccione manualmente.`;
+                pisoInfo.className = 'form-text text-warning';
+            }
+        }
+        
+        // Ejecutar validación después de sincronizar
+        validarFormulario();
+    }
+
+    // EVENTO: Cambio de oficina
+    oficinaBelect.addEventListener('change', function() {
+        sincronizarOficinaPiso(this.value, true);
+    });
+
+    // INICIALIZACIÓN: Sincronizar piso actual al cargar
+    if (originalData.oficina) {
+        // Primero establecer el piso desde los datos originales
+        if (originalData.piso) {
+            pisoSelect.value = originalData.piso;
+        }
+        
+        // Luego verificar si coincide con el piso de la oficina
+        sincronizarOficinaPiso(originalData.oficina, false);
+    }
+
+    // Switch OCS
+    ocsSwitch.addEventListener('change', function() {
+        ocsLabel.textContent = this.checked ? 'Sí, usa OCS' : 'No usa OCS';
+    });
+
+    // Validación en tiempo real
+    form.addEventListener('input', validarFormulario);
+    form.addEventListener('change', validarFormulario);
+
+    // Validación de IP
+    ipInput.addEventListener('input', function() {
+        const ip = this.value.trim();
+        if (ip && !esIPValida(ip)) {
+            this.setCustomValidity('Ingrese una dirección IP válida');
+        } else {
+            this.setCustomValidity('');
+        }
+    });
+
+    // Validación de MAC
+    macInput.addEventListener('input', function() {
+        const mac = this.value.trim();
+        if (mac && !esMACValida(mac)) {
+            this.setCustomValidity('Ingrese una dirección MAC válida (00:11:22:33:44:55)');
+        } else {
+            this.setCustomValidity('');
+        }
+    });
+
+    function validarFormulario() {
+        const persona = document.getElementById('usuario_persona').value.trim();
+        const oficina = document.getElementById('oficina').value.trim();
+        const marca = document.getElementById('marca').value.trim();
+        const modelo = document.getElementById('modelo').value.trim();
+        const serie = document.getElementById('serie').value.trim();
+        const ip = document.getElementById('ip_pc').value.trim();
+        const mac = document.getElementById('mac_address').value.trim();
+
+        const camposRequeridos = [
+            {nombre: 'Persona', valor: persona},
+            {nombre: 'Oficina', valor: oficina},
+            {nombre: 'Marca', valor: marca},
+            {nombre: 'Modelo', valor: modelo},
+            {nombre: 'Serie', valor: serie}
+        ];
+
+        const camposFaltantes = camposRequeridos.filter(campo => !campo.valor);
+        
+        // Verificar cambios
+        const hayCambios = verificarCambios();
+        
+        if (camposFaltantes.length === 0) {
+            if (ip && !esIPValida(ip)) {
+                actualizarEstadoValidacion('⚠️ Dirección IP inválida', 'warning');
+            } else if (mac && !esMACValida(mac)) {
+                actualizarEstadoValidacion('⚠️ Dirección MAC inválida', 'warning');
+            } else if (hayCambios) {
+                actualizarEstadoValidacion('✅ Formulario válido - Hay cambios para guardar', 'success');
+            } else {
+                actualizarEstadoValidacion('ℹ️ No hay cambios para guardar', 'info');
+            }
+        } else {
+            const faltantes = camposFaltantes.map(c => c.nombre).join(', ');
+            actualizarEstadoValidacion(`❌ Faltan campos obligatorios: ${faltantes}`, 'error');
+        }
+    }
+
+    function verificarCambios() {
+        const datosActuales = {
+            usuario_persona: document.getElementById('usuario_persona').value,
+            pc_usuario: document.getElementById('pc_usuario').value,
+            oficina: document.getElementById('oficina').value,
+            piso: document.getElementById('piso').value,
+            nombre_pc: document.getElementById('nombre_pc').value,
+            ip_pc: document.getElementById('ip_pc').value,
+            mac_address: document.getElementById('mac_address').value,
+            windows: document.getElementById('windows').value,
+            marca: document.getElementById('marca').value,
+            modelo: document.getElementById('modelo').value,
+            serie: document.getElementById('serie').value,
+            procesador: document.getElementById('procesador').value,
+            ram: document.getElementById('ram').value,
+            disco: document.getElementById('disco').value,
+            contrasena: document.getElementById('contrasena').value,
+            usa_ocs: document.getElementById('usa_ocs').checked,
+            estado: document.getElementById('estado').value,
+            observaciones: document.getElementById('observaciones').value
+        };
+
+        for (const clave in originalData) {
+            if (datosActuales[clave] !== originalData[clave]) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function esIPValida(ip) {
+        const partes = ip.split('.');
+        if (partes.length !== 4) return false;
+        
+        for (const parte of partes) {
+            if (!/^\d+$/.test(parte)) return false;
+            const num = parseInt(parte, 10);
+            if (num < 0 || num > 255) return false;
+        }
+        return true;
+    }
+
+    function esMACValida(mac) {
+        const macRegex = /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/;
+        return macRegex.test(mac);
+    }
+
+    function actualizarEstadoValidacion(mensaje, tipo = 'info') {
+        validationStatus.textContent = mensaje;
+        
+        validationStatus.className = 'card-text mb-0';
+        
+        switch(tipo) {
+            case 'success':
+                validationStatus.classList.add('text-success');
+                break;
+            case 'warning':
+                validationStatus.classList.add('text-warning');
+                break;
+            case 'error':
+                validationStatus.classList.add('text-danger');
+                break;
+            default:
+                validationStatus.classList.add('text-info');
+        }
+    }
+
+    // Validación inicial
+    validarFormulario();
+});
+
+function togglePassword() {
+    const passwordInput = document.getElementById('contrasena');
+    const toggleIcon = document.getElementById('toggleIcon');
+    
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        toggleIcon.className = 'fas fa-eye-slash';
+    } else {
+        passwordInput.type = 'password';
+        toggleIcon.className = 'fas fa-eye';
+    }
+}
+
+function resetearCambios() {
+    if (confirm('¿Está seguro de que desea revertir todos los cambios?')) {
+        window.location.reload();
+    }
+}
+</script>
+{% endblock %}

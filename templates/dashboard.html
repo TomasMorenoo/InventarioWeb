@@ -1,0 +1,650 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Sistema de Inventario{% endblock %}
+
+{% block content %}
+<!-- Filtros -->
+<div class="filter-controls mb-4">
+    <div class="row g-2">
+        <!-- Primera fila de filtros -->
+        <div class="col-md-2">
+            <label class="form-label small">Oficina</label>
+            <select class="form-select form-select-sm" id="filterOficina">
+                <option value="">Todas</option>
+            </select>
+        </div>
+        <div class="col-md-1">
+            <label class="form-label small">Piso</label>
+            <select class="form-select form-select-sm" id="filterPiso">
+                <option value="">Todos</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small">Marca</label>
+            <select class="form-select form-select-sm" id="filterMarca">
+                <option value="">Todas</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small">Estado</label>
+            <select class="form-select form-select-sm" id="filterEstado">
+                <option value="">Todos</option>
+                <option value="Ok">Ok</option>
+                <option value="Desenchufada">Desenchufada</option>
+                <option value="Baja">Baja</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small">Duplicados</label>
+            <select class="form-select form-select-sm" id="filterDuplicados">
+                <option value="">Todos</option>
+                <option value="1">Solo Duplicados</option>
+                <option value="0">Sin Duplicados</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label small">Búsqueda</label>
+            <div class="input-group input-group-sm">
+                <input type="text" class="form-control form-control-sm" id="searchText" 
+                       placeholder="Buscar...">
+                <button type="button" class="btn btn-outline-secondary" onclick="limpiarFiltros()" title="Limpiar filtros">
+                    <i class="fas fa-eraser"></i>
+                </button>
+                <div id="resetOrderBtnContainer"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <!-- Tabla de inventario -->
+    <div class="card table-container">
+        <div class="card-body">
+            {% if registros %}
+            <div class="table-responsive">
+                <table class="table table-hover table-striped" id="inventoryTable">
+                    <thead class="table-dark">
+                        <tr>
+                            <th class="col-oficina sortable" data-sort="oficina">
+                                Oficina 
+                                {% if current_sort == 'oficina' %}
+                                    <i class="fas fa-sort-{{ 'down' if current_order == 'desc' else 'up' }}"></i>
+                                {% else %}
+                                    <i class="fas fa-sort text-muted"></i>
+                                {% endif %}
+                            </th>
+                            <th class="col-persona sortable" data-sort="usuario_persona">
+                                Persona
+                                {% if current_sort == 'usuario_persona' %}
+                                    <i class="fas fa-sort-{{ 'down' if current_order == 'desc' else 'up' }}"></i>
+                                {% else %}
+                                    <i class="fas fa-sort text-muted"></i>
+                                {% endif %}
+                            </th>
+                            <th class="col-usuario-red sortable" data-sort="pc_usuario">
+                                Usuario Red
+                                {% if current_sort == 'pc_usuario' %}
+                                    <i class="fas fa-sort-{{ 'down' if current_order == 'desc' else 'up' }}"></i>
+                                {% else %}
+                                    <i class="fas fa-sort text-muted"></i>
+                                {% endif %}
+                            </th>
+                            <th class="col-ip-mac sortable" data-sort="ip_pc">
+                                IP / MAC
+                                {% if current_sort == 'ip_pc' %}
+                                    <i class="fas fa-sort-{{ 'down' if current_order == 'desc' else 'up' }}"></i>
+                                {% else %}
+                                    <i class="fas fa-sort text-muted"></i>
+                                {% endif %}
+                            </th>
+                            <th class="col-equipo sortable" data-sort="nombre_pc">
+                                Equipo
+                                {% if current_sort == 'nombre_pc' %}
+                                    <i class="fas fa-sort-{{ 'down' if current_order == 'desc' else 'up' }}"></i>
+                                {% else %}
+                                    <i class="fas fa-sort text-muted"></i>
+                                {% endif %}
+                            </th>
+                            <th class="col-hardware sortable" data-sort="marca">
+                                Hardware
+                                {% if current_sort == 'marca' %}
+                                    <i class="fas fa-sort-{{ 'down' if current_order == 'desc' else 'up' }}"></i>
+                                {% else %}
+                                    <i class="fas fa-sort text-muted"></i>
+                                {% endif %}
+                            </th>
+                            <th class="col-estado sortable" data-sort="estado">
+                                Estado
+                                {% if current_sort == 'estado' %}
+                                    <i class="fas fa-sort-{{ 'down' if current_order == 'desc' else 'up' }}"></i>
+                                {% else %}
+                                    <i class="fas fa-sort text-muted"></i>
+                                {% endif %}
+                            </th>
+                            <th class="col-acciones">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for registro in registros %}
+                        <tr data-oficina="{{ registro.oficina or '' }}" 
+                            data-piso="{{ registro.piso or '' }}"
+                            data-marca="{{ registro.marca or '' }}"
+                            data-estado="{{ registro.estado or 'Ok' }}"
+                            data-duplicate="{{ registro.is_duplicate or 0 }}"
+                            data-search="{{ (registro.serie + ' ' + registro.nombre_pc + ' ' + registro.ip_pc + ' ' + registro.mac_address + ' ' + (registro.usuario_persona or '') + ' ' + (registro.pc_usuario or ''))|lower }}"
+                            {% if registro.is_duplicate %}class="table-warning"{% endif %}>
+                            
+                            <td class="col-oficina">
+                                <div class="fw-bold">{{ registro.oficina or 'Sin oficina' }}</div>
+                                {% if registro.piso %}
+                                    <small class="text-muted">Piso {{ registro.piso }}</small>
+                                {% endif %}
+                                {% if registro.is_duplicate %}
+                                    <small class="text-danger"><i class="fas fa-exclamation-triangle"></i> Duplicado</small>
+                                {% endif %}
+                            </td>
+                            
+                            <!-- PERSONA = campo "usuario" de BD (el que está vacío en tu imagen) -->
+                            <td class="col-persona">
+                                {% if registro.usuario_persona %}
+                                    <span class="fw-bold text-success">{{ registro.usuario_persona }}</span>
+                                {% else %}
+                                    <span class="text-muted">Sin asignar</span>
+                                {% endif %}
+                            </td>
+                            
+                            <!-- USUARIO RED = campo "pc_usuario" de BD (el que tiene "callcenter" en tu imagen) -->
+                            <td class="col-usuario-red">
+                                {% if registro.pc_usuario %}
+                                    <code>{{ registro.pc_usuario }}</code>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            
+                            <td class="col-ip-mac">
+                                {% if registro.ip_pc %}
+                                    <div><code class="text-info">{{ registro.ip_pc }}</code></div>
+                                {% endif %}
+                                {% if registro.mac_address %}
+                                    <div><code class="text-primary">{{ registro.mac_address }}</code></div>
+                                {% elif registro.ip_pc %}
+                                    <div><small class="text-muted">Sin MAC</small></div>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            
+                            <td class="col-equipo">
+                                <div class="fw-bold">{{ registro.nombre_pc or 'Sin nombre' }}</div>
+                                {% if registro.windows %}
+                                    <span class="badge bg-info">{{ registro.windows }}</span>
+                                {% endif %}
+                            </td>
+                            
+                            <td class="col-hardware">
+                                <div class="fw-bold text-primary">{{ registro.marca or 'Sin marca' }}</div>
+                                {% if registro.modelo %}
+                                    <div class="text-muted">{{ registro.modelo }}</div>
+                                {% endif %}
+                                {% if registro.serie %}
+                                    <div><code class="small">{{ registro.serie }}</code></div>
+                                {% endif %}
+                            </td>
+                            
+                            <td class="col-estado">
+                                {% set estado = registro.estado or 'Ok' %}
+                                {% if estado == 'Ok' %}
+                                    <span class="badge bg-success">{{ estado }}</span>
+                                {% elif estado == 'Desenchufada' %}
+                                    <span class="badge bg-warning text-dark">{{ estado }}</span>
+                                {% elif estado == 'Baja' %}
+                                    <span class="badge bg-danger">{{ estado }}</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ estado }}</span>
+                                {% endif %}
+                            </td>
+                            
+                            <td class="col-acciones">
+                                <div class="dropdown">
+                                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" 
+                                            data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fas fa-cog"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li>
+                                            <a class="dropdown-item" href="{{ url_for('ver_registro', registro_id=registro.id) }}">
+                                                <i class="fas fa-eye text-info me-2"></i>Ver detalles
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item" href="{{ url_for('editar_registro', registro_id=registro.id) }}">
+                                                <i class="fas fa-edit text-warning me-2"></i>Editar
+                                            </a>
+                                        </li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <button class="dropdown-item text-danger" type="button"
+                                                    onclick="confirmarEliminar({{ registro.id }}, '{{ registro.nombre_pc or 'Equipo' }}')">
+                                                <i class="fas fa-trash me-2"></i>Eliminar
+                                            </button>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Estadísticas -->
+            <div class="row mt-3">
+                <div class="col-md-3">
+                    <div class="stat-card text-center">
+                        <i class="fas fa-desktop text-primary"></i>
+                        <div class="stat-number">{{ registros|length }}</div>
+                        <div class="stat-label">Total Equipos</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card text-center">
+                        <i class="fas fa-plug text-warning"></i>
+                        <div class="stat-number">{{ registros|selectattr('estado', 'equalto', 'Desenchufada')|list|length }}</div>
+                        <div class="stat-label">Desenchufadas</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card text-center">
+                        <i class="fas fa-times-circle text-danger"></i>
+                        <div class="stat-number">{{ registros|selectattr('estado', 'equalto', 'Baja')|list|length }}</div>
+                        <div class="stat-label">De Baja</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card text-center">
+                        <i class="fas fa-exclamation-triangle text-danger"></i>
+                        <div class="stat-number">{{ registros|selectattr('is_duplicate')|list|length }}</div>
+                        <div class="stat-label">Duplicados</div>
+                    </div>
+                </div>
+            </div>
+            
+            {% else %}
+            <div class="no-data-container text-center py-5">
+                <i class="fas fa-inbox fa-3x mb-3 text-muted"></i>
+                <h5>No hay registros en el inventario</h5>
+                <p class="text-muted">Los datos aparecerán aquí cuando se sincronicen.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Modal de eliminación -->
+    <div class="modal fade" id="deleteModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-exclamation-triangle me-2"></i> Confirmar Eliminación
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>¿Está seguro de que desea eliminar el registro del equipo:</p>
+                    <p class="fw-bold" id="deleteEquipmentName"></p>
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Advertencia:</strong> Esta acción no se puede deshacer.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <form id="deleteForm" method="POST" style="display:inline;">
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-trash me-2"></i>Eliminar
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function limpiarFiltros() {
+    document.querySelectorAll('#filterOficina, #filterPiso, #filterMarca, #filterEstado, #filterDuplicados').forEach(select => {
+        if (select) select.value = '';
+    });
+    const searchInput = document.getElementById('searchText');
+    if (searchInput) searchInput.value = '';
+    aplicarFiltros();
+}
+
+function aplicarFiltros() {
+    const filterOficina = document.getElementById('filterOficina')?.value.toLowerCase() || '';
+    const filterPiso = document.getElementById('filterPiso')?.value || '';
+    const filterMarca = document.getElementById('filterMarca')?.value.toLowerCase() || '';
+    const filterEstado = document.getElementById('filterEstado')?.value || '';
+    const filterDuplicados = document.getElementById('filterDuplicados')?.value || '';
+    const searchText = document.getElementById('searchText')?.value.toLowerCase() || '';
+
+    const rows = document.querySelectorAll('#inventoryTable tbody tr');
+    let visibleCount = 0;
+    
+    rows.forEach(row => {
+        const oficina = row.getAttribute('data-oficina')?.toLowerCase() || '';
+        const piso = row.getAttribute('data-piso') || '';
+        const marca = row.getAttribute('data-marca')?.toLowerCase() || '';
+        const estado = row.getAttribute('data-estado') || '';
+        const duplicate = row.getAttribute('data-duplicate') || '';
+        const search = row.getAttribute('data-search') || '';
+
+        const matchOficina = !filterOficina || oficina.includes(filterOficina);
+        const matchPiso = !filterPiso || piso === filterPiso;
+        const matchMarca = !filterMarca || marca.includes(filterMarca);
+        const matchEstado = !filterEstado || estado === filterEstado;
+        const matchDuplicate = !filterDuplicados || duplicate === filterDuplicados;
+        const matchSearch = !searchText || search.includes(searchText);
+
+        if (matchOficina && matchPiso && matchMarca && matchEstado && matchDuplicate && matchSearch) {
+            row.style.display = '';
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+    
+    updateResultsCount(visibleCount);
+}
+
+function updateResultsCount(count) {
+    let counter = document.getElementById('resultsCounter');
+    if (!counter) {
+        counter = document.createElement('div');
+        counter.id = 'resultsCounter';
+        counter.className = 'text-muted small mb-2';
+        const tableContainer = document.querySelector('.table-responsive');
+        if (tableContainer) {
+            tableContainer.parentNode.insertBefore(counter, tableContainer);
+        }
+    }
+    
+    const total = document.querySelectorAll('#inventoryTable tbody tr').length;
+    if (count === total) {
+        counter.textContent = `Mostrando ${total} equipos`;
+    } else {
+        counter.textContent = `Mostrando ${count} de ${total} equipos`;
+    }
+}
+
+function poblarFiltros() {
+    const rows = document.querySelectorAll('#inventoryTable tbody tr');
+    const oficinas = new Set();
+    const pisos = new Set();
+    const marcas = new Set();
+
+    rows.forEach(row => {
+        const oficina = row.getAttribute('data-oficina');
+        const piso = row.getAttribute('data-piso');
+        const marca = row.getAttribute('data-marca');
+        
+        if (oficina) oficinas.add(oficina);
+        if (piso) pisos.add(piso);
+        if (marca) marcas.add(marca);
+    });
+
+    const selectOficina = document.getElementById('filterOficina');
+    if (selectOficina) {
+        [...oficinas].sort().forEach(oficina => {
+            const option = document.createElement('option');
+            option.value = oficina;
+            option.textContent = oficina;
+            selectOficina.appendChild(option);
+        });
+    }
+
+    const selectPiso = document.getElementById('filterPiso');
+    if (selectPiso) {
+        // Ordenar pisos numéricamente
+        [...pisos].sort((a, b) => {
+            const numA = parseInt(a) || 0;
+            const numB = parseInt(b) || 0;
+            return numA - numB;
+        }).forEach(piso => {
+            const option = document.createElement('option');
+            option.value = piso;
+            option.textContent = `Piso ${piso}`;
+            selectPiso.appendChild(option);
+        });
+    }
+
+    const selectMarca = document.getElementById('filterMarca');
+    if (selectMarca) {
+        [...marcas].sort().forEach(marca => {
+            const option = document.createElement('option');
+            option.value = marca;
+            option.textContent = marca;
+            selectMarca.appendChild(option);
+        });
+    }
+}
+
+function confirmarEliminar(id, nombre) {
+    document.getElementById('deleteEquipmentName').textContent = nombre;
+    document.getElementById('deleteForm').action = `/registro/${id}/eliminar`;
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+
+function highlightDuplicateMACs() {
+    const macCells = document.querySelectorAll('#inventoryTable .col-ip-mac code.text-primary');
+    const macCounts = {};
+    
+    macCells.forEach(cell => {
+        const mac = cell.textContent.trim();
+        if (mac && mac !== 'N/A') {
+            macCounts[mac] = (macCounts[mac] || 0) + 1;
+        }
+    });
+    
+    macCells.forEach(cell => {
+        const mac = cell.textContent.trim();
+        if (macCounts[mac] > 1) {
+            cell.classList.remove('text-primary');
+            cell.classList.add('text-danger');
+            cell.setAttribute('title', `MAC duplicada (${macCounts[mac]} veces)`);
+        }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Eventos de filtros
+    document.querySelectorAll('#filterOficina, #filterPiso, #filterMarca, #filterEstado, #filterDuplicados').forEach(select => {
+        if (select) select.addEventListener('change', aplicarFiltros);
+    });
+
+    const searchInput = document.getElementById('searchText');
+    if (searchInput) {
+        searchInput.addEventListener('input', aplicarFiltros);
+    }
+
+    poblarFiltros();
+    
+    const totalRows = document.querySelectorAll('#inventoryTable tbody tr').length;
+    updateResultsCount(totalRows);
+    
+    highlightDuplicateMACs();
+    
+    // Funcionalidad de ordenamiento
+    document.querySelectorAll('.sortable').forEach(header => {
+        header.style.cursor = 'pointer';
+        header.addEventListener('click', function() {
+            const sortBy = this.getAttribute('data-sort');
+            const currentSort = '{{ current_sort }}';
+            const currentOrder = '{{ current_order }}';
+            
+            // Determinar nuevo orden
+            let newOrder = 'asc';
+            if (sortBy === currentSort && currentOrder === 'asc') {
+                newOrder = 'desc';
+            }
+            
+            // Redirigir con parámetros de ordenamiento
+            window.location.href = `/?sort=${sortBy}&order=${newOrder}`;
+        });
+    });
+    
+    // Botón para volver al orden por defecto
+    const currentSort = '{{ current_sort }}';
+    if (currentSort !== 'default') {
+        const resetOrderBtn = document.createElement('button');
+        resetOrderBtn.className = 'btn btn-outline-secondary btn-sm';
+        resetOrderBtn.innerHTML = '<i class="fas fa-undo"></i>';
+        resetOrderBtn.title = 'Volver al orden por defecto (Piso > Oficina > IP)';
+        resetOrderBtn.onclick = function() {
+            window.location.href = '/?sort=default&order=asc';
+        };
+        
+        // Insertar en el input-group junto al botón de limpiar
+        const container = document.getElementById('resetOrderBtnContainer');
+        if (container) {
+            container.appendChild(resetOrderBtn);
+        }
+    }
+});
+</script>
+
+<style>
+/* Configuración de la tabla */
+#inventoryTable {
+    width: 100%;
+    table-layout: fixed;
+}
+
+/* Anchos específicos para cada columna */
+.col-oficina { width: 16%; }
+.col-persona { width: 13%; }
+.col-usuario-red { width: 11%; }
+.col-ip-mac { width: 15%; }
+.col-equipo { width: 14%; }
+.col-hardware { width: 16%; }
+.col-estado { width: 8%; }
+.col-acciones { width: 7%; }
+
+/* Estilos generales */
+#inventoryTable th {
+    font-weight: 600;
+    font-size: 0.9em;
+    white-space: nowrap;
+    vertical-align: middle;
+    border-bottom: 2px solid #dee2e6;
+}
+
+#inventoryTable td {
+    vertical-align: middle;
+    font-size: 0.85em;
+    padding: 0.75rem 0.5rem;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+/* Estadísticas */
+.stat-card {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 10px;
+    transition: transform 0.2s;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.stat-number {
+    font-size: 24px;
+    font-weight: bold;
+    margin: 5px 0;
+}
+
+.stat-label {
+    font-size: 12px;
+    color: #6c757d;
+    text-transform: uppercase;
+}
+
+/* Centrado específico para columnas */
+.col-estado {
+    text-align: center !important;
+}
+
+.col-acciones {
+    text-align: center !important;
+}
+
+/* Estilo para el badge de estado */
+.col-estado .badge {
+    display: inline-block;
+    text-align: center;
+    min-width: 70px;
+}
+
+/* Menú desplegable de acciones */
+.dropdown-toggle::after {
+    font-size: 0.7em;
+}
+
+.dropdown-menu {
+    min-width: 150px;
+    font-size: 0.9em;
+}
+
+.dropdown-item {
+    padding: 0.5rem 1rem;
+    transition: background-color 0.15s ease-in-out;
+}
+
+.dropdown-item:hover {
+    background-color: #f8f9fa;
+}
+
+.dropdown-item i {
+    width: 16px;
+    text-align: center;
+}
+
+.dropdown-divider {
+    margin: 0.25rem 0;
+}
+
+/* Botones de acción mejorados */
+.btn-group .btn {
+    padding: 0.25rem 0.5rem;
+    margin: 0 1px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .table-responsive {
+        font-size: 0.75em;
+    }
+    
+    .col-oficina { width: 18%; }
+    .col-persona { width: 15%; }
+    .col-usuario-red { width: 12%; }
+    .col-ip-mac { width: 15%; }
+    .col-equipo { width: 15%; }
+    .col-hardware { width: 15%; }
+    .col-estado { width: 5%; }
+    .col-acciones { width: 5%; }
+    
+    .btn-group .btn {
+        padding: 0.2rem 0.3rem;
+        font-size: 0.8em;
+    }
+}
+</style>
+{% endblock %}

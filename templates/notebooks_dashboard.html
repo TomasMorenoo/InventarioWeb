@@ -1,0 +1,431 @@
+{% extends "base.html" %}
+
+{% block title %}Notebooks - Sistema de Inventario{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-laptop me-2"></i>Gestión de Notebooks</h2>
+    <a href="{{ url_for('notebooks_agregar') }}" class="btn btn-primary">
+        <i class="fas fa-plus me-2"></i>Agregar Notebook
+    </a>
+</div>
+
+<!-- Estadísticas -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-laptop fa-2x text-primary mb-2"></i>
+                <h3>{{ stats.total }}</h3>
+                <p class="text-muted mb-0">Total Notebooks</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-hand-holding fa-2x text-warning mb-2"></i>
+                <h3>{{ stats.prestadas }}</h3>
+                <p class="text-muted mb-0">Prestadas</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-archive fa-2x text-success mb-2"></i>
+                <h3>{{ stats.guardadas }}</h3>
+                <p class="text-muted mb-0">Guardadas</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabla de notebooks -->
+<div class="card">
+    <div class="card-body">
+        {% if notebooks %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>N° Serie / Nombre PC</th>
+                        <th>Marca / Modelo</th>
+                        <th>IP / MAC</th>
+                        <th>Estado</th>
+                        <th>Persona Actual</th>
+                        <th>Observaciones</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for nb in notebooks %}
+                    <tr>
+                        <td>
+                            <div><code>{{ nb.numero_serie }}</code></div>
+                            {% if nb.pc_nombre %}
+                            <div class="text-muted small mt-1">
+                                <i class="fas fa-desktop"></i> {{ nb.pc_nombre }}
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="fw-bold">{{ nb.marca or 'N/A' }}</div>
+                            <small class="text-muted">{{ nb.modelo or 'N/A' }}</small>
+                        </td>
+                        <td>
+                            {% if nb.ip %}
+                            <div><code class="text-info">IP: {{ nb.ip }}</code></div>
+                            {% endif %}
+                            {% if nb.mac_address %}
+                            <div><code class="text-primary">MAC: {{ nb.mac_address }}</code></div>
+                            {% endif %}
+                            {% if not nb.ip and not nb.mac_address %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if nb.estado == 'Prestada' %}
+                                <span class="badge bg-warning text-dark">Prestada</span>
+                            {% elif nb.estado == 'Guardada' %}
+                                <span class="badge bg-success">Guardada</span>
+                            {% elif nb.estado == 'En uso interno' %}
+                                <span class="badge bg-info text-dark">En uso interno</span>
+                            {% elif nb.estado == 'En reparación' %}
+                                <span class="badge bg-secondary">En reparación</span>
+                            {% elif nb.estado == 'Baja / Desuso' %}
+                                <span class="badge bg-dark">Baja / Desuso</span>
+                            {% elif nb.estado == 'Extraviada / Sin localizar' %}
+                                <span class="badge bg-danger">Extraviada</span>
+                            {% elif nb.estado == 'Depósito' %}
+                                <span class="badge text-white" style="background-color:#a97142;">Depósito</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ nb.estado }}</span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {% if nb.persona_actual %}
+                                <span class="fw-bold">{{ nb.persona_actual }}</span>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if nb.observaciones %}
+                                <small class="text-muted">{{ nb.observaciones[:60] }}{% if nb.observaciones|length > 60 %}...{% endif %}</small>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group me-2">
+                                <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fas fa-cog"></i>
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li>
+                                        <a class="dropdown-item" href="{{ url_for('notebooks_detalle', notebook_id=nb.id) }}">
+                                            <i class="fas fa-eye me-2"></i>Ver
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="{{ url_for('notebooks_editar', notebook_id=nb.id) }}">
+                                            <i class="fas fa-edit me-2"></i>Editar
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <a class="dropdown-item text-danger" href="#" data-bs-toggle="modal" data-bs-target="#borrarModal{{ nb.id }}">
+                                            <i class="fas fa-trash me-2"></i>Borrar
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                            
+                            <button class="btn btn-sm btn-outline-info" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#cambiarEstadoModal{{ nb.id }}">
+                                <i class="fas fa-exchange-alt me-2"></i>Cambiar Estado
+                            </button>
+                        </td>
+                    </tr>
+                    
+                    <!-- Modal Prestar -->
+                    <div class="modal fade" id="prestarModal{{ nb.id }}" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Prestar Notebook</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <form method="POST" action="{{ url_for('notebooks_prestar', notebook_id=nb.id) }}">
+                                    <div class="modal-body">
+                                        <div class="alert alert-info">
+                                            <strong>Notebook:</strong> {{ nb.marca }} {{ nb.modelo }}<br>
+                                            <strong>Serie:</strong> {{ nb.numero_serie }}
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Persona *</label>
+                                            <input type="text" class="form-control" name="persona" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Observaciones</label>
+                                            <textarea class="form-control" name="observaciones" rows="3"></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                        <button type="submit" class="btn btn-warning">Prestar</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Modal Devolver -->
+                    <div class="modal fade" id="devolverModal{{ nb.id }}" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Devolver Notebook</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <form method="POST" action="{{ url_for('notebooks_devolver', notebook_id=nb.id) }}">
+                                    <div class="modal-body">
+                                        <p>¿Confirma la devolución de la notebook prestada a <strong>{{ nb.persona_actual }}</strong>?</p>
+                                        <div class="mb-3">
+                                            <label class="form-label">Observaciones</label>
+                                            <textarea class="form-control" name="observaciones" rows="3"></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                        <button type="submit" class="btn btn-success">Devolver</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Modal Borrar -->
+                    <div class="modal fade" id="borrarModal{{ nb.id }}" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header bg-danger text-white">
+                                    <h5 class="modal-title">Eliminar Notebook</h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                </div>
+                                <form method="POST" action="{{ url_for('notebooks_borrar', notebook_id=nb.id) }}">
+                                    <div class="modal-body">
+                                        <div class="alert alert-danger">
+                                            <i class="fas fa-exclamation-triangle me-2"></i>
+                                            <strong>¡Atención!</strong> Esta acción no se puede deshacer.
+                                        </div>
+                                        <p>¿Está seguro que desea eliminar esta notebook?</p>
+                                        <div class="card bg-light">
+                                            <div class="card-body">
+                                                <strong>Número de Serie:</strong> {{ nb.numero_serie }}<br>
+                                                <strong>Marca/Modelo:</strong> {{ nb.marca }} {{ nb.modelo }}<br>
+                                                {% if nb.estado == 'Prestada' %}
+                                                <strong class="text-warning">Estado:</strong> <span class="text-warning">Prestada a {{ nb.persona_actual }}</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        <p class="text-muted small mt-2">
+                                            Se eliminará la notebook y todo su historial de préstamos.
+                                        </p>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                        <button type="submit" class="btn btn-danger">
+                                            <i class="fas fa-trash me-2"></i>Eliminar
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Modal Marcar como Reparada -->
+                    <div class="modal fade" id="repararModal{{ nb.id }}" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header bg-primary text-white">
+                                    <h5 class="modal-title">Marcar como Reparada</h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                </div>
+                                <form method="POST" action="{{ url_for('notebooks_cambiar_estado', notebook_id=nb.id) }}">
+                                    <input type="hidden" name="nuevo_estado" value="Guardada">
+                                    <div class="modal-body">
+                                        <p>¿Confirma que la reparación fue completada?</p>
+                                        <div class="alert alert-info">
+                                            La notebook pasará a estado <strong>Guardada</strong>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Observaciones de reparación</label>
+                                            <textarea class="form-control" name="observaciones" rows="3" placeholder="Detalles de la reparación realizada..."></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-check me-2"></i>Marcar como Reparada
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Modal Marcar como Disponible -->
+                    <div class="modal fade" id="disponibleModal{{ nb.id }}" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header bg-success text-white">
+                                    <h5 class="modal-title">Marcar como Disponible</h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                </div>
+                                <form method="POST" action="{{ url_for('notebooks_cambiar_estado', notebook_id=nb.id) }}">
+                                    <input type="hidden" name="nuevo_estado" value="Guardada">
+                                    <div class="modal-body">
+                                        <p>¿Confirma que desea marcar esta notebook como <strong>Guardada</strong>?</p>
+                                        <div class="alert alert-info">
+                                            <strong>Estado actual:</strong> {{ nb.estado }}
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Observaciones</label>
+                                            <textarea class="form-control" name="observaciones" rows="3" placeholder="Razón del cambio de estado..."></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                        <button type="submit" class="btn btn-success">
+                                            <i class="fas fa-check-circle me-2"></i>Marcar como Guardada
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Modal Cambiar Estado General -->
+                    <div class="modal fade" id="cambiarEstadoModal{{ nb.id }}" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header bg-primary text-white">
+                                    <h5 class="modal-title">Cambiar Estado</h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                </div>
+                                <form method="POST" action="{{ url_for('notebooks_cambiar_estado', notebook_id=nb.id) }}" id="formCambiarEstado{{ nb.id }}">
+                                    <div class="modal-body">
+                                        <div class="alert alert-info">
+                                            <strong>Notebook:</strong> {{ nb.marca }} {{ nb.modelo }}<br>
+                                            <strong>Serie:</strong> {{ nb.numero_serie }}<br>
+                                            <strong>Estado actual:</strong> <span class="badge bg-secondary">{{ nb.estado }}</span>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">Nuevo Estado *</label>
+                                            <select class="form-select" name="nuevo_estado" id="selectEstado{{ nb.id }}" required>
+                                                <option value="">-- Seleccione un estado --</option>
+                                                <option value="Guardada">✅ Guardada</option>
+                                                <option value="Prestada">🟡 Prestada</option>
+                                                <option value="En uso interno">🔵 En uso interno</option>
+                                                <option value="En reparación">⚙️ En reparación</option>
+                                                <option value="Baja / Desuso">⚫ Baja / Desuso</option>
+                                                <option value="Extraviada / Sin localizar">🔴 Extraviada / Sin localizar</option>
+                                                <option value="Depósito">📦 Depósito</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <!-- Campo persona - se muestra solo para Prestada y En uso interno -->
+                                        <div class="mb-3" id="campoPersona{{ nb.id }}" style="display: none;">
+                                            <label class="form-label fw-bold">Persona *</label>
+                                            <input type="text" class="form-control" name="persona" id="inputPersona{{ nb.id }}" placeholder="Nombre de la persona">
+                                            <small class="text-muted" id="ayudaPersona{{ nb.id }}"></small>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label">Observaciones</label>
+                                            <textarea class="form-control" name="observaciones" rows="3" placeholder="Motivo del cambio de estado..."></textarea>
+                                        </div>
+                                        
+                                        <div class="alert alert-warning" id="alertaEstado{{ nb.id }}">
+                                            <i class="fas fa-info-circle me-2"></i>
+                                            <small>
+                                                <strong>Nota:</strong> Si cambia el estado a algo diferente de "Prestada" o "En uso interno", se limpiará automáticamente la persona asignada.
+                                            </small>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-exchange-alt me-2"></i>Cambiar Estado
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <script>
+                    // Manejar cambio de estado para mostrar/ocultar campo persona
+                    document.getElementById('selectEstado{{ nb.id }}').addEventListener('change', function() {
+                        const estado = this.value;
+                        const campoPersona = document.getElementById('campoPersona{{ nb.id }}');
+                        const inputPersona = document.getElementById('inputPersona{{ nb.id }}');
+                        const ayudaPersona = document.getElementById('ayudaPersona{{ nb.id }}');
+                        const alertaEstado = document.getElementById('alertaEstado{{ nb.id }}');
+                        
+                        if (estado === 'Prestada') {
+                            campoPersona.style.display = 'block';
+                            inputPersona.required = true;
+                            inputPersona.value = '';
+                            inputPersona.disabled = false;
+                            ayudaPersona.textContent = 'Ingrese el nombre de la persona';
+                            alertaEstado.style.display = 'none';
+                        } else if (estado === 'En uso interno') {
+                            campoPersona.style.display = 'block';
+                            inputPersona.required = false;
+                            inputPersona.value = 'Computos';
+                            inputPersona.disabled = true;
+                            ayudaPersona.textContent = 'Se asignará automáticamente a "Computos"';
+                            alertaEstado.style.display = 'none';
+                        } else {
+                            campoPersona.style.display = 'none';
+                            inputPersona.required = false;
+                            inputPersona.value = '';
+                            inputPersona.disabled = false;
+                            alertaEstado.style.display = 'block';
+                        }
+                    });
+                    
+                    // Antes de enviar el formulario, habilitar el campo si está deshabilitado
+                    document.getElementById('formCambiarEstado{{ nb.id }}').addEventListener('submit', function(e) {
+                        const inputPersona = document.getElementById('inputPersona{{ nb.id }}');
+                        const selectEstado = document.getElementById('selectEstado{{ nb.id }}');
+                        
+                        // Si el campo está deshabilitado (En uso interno), habilitarlo temporalmente para que se envíe
+                        if (inputPersona.disabled && selectEstado.value === 'En uso interno') {
+                            inputPersona.disabled = false;
+                        }
+                    });
+                    </script>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-inbox fa-3x mb-3 text-muted"></i>
+            <h5>No hay notebooks registradas</h5>
+            <p class="text-muted">Agregue notebooks desde el inventario general</p>
+            <a href="{{ url_for('notebooks_agregar') }}" class="btn btn-primary mt-3">
+                <i class="fas fa-plus me-2"></i>Agregar Primera Notebook
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

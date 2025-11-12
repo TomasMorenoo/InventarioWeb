@@ -1,0 +1,374 @@
+{% extends "base.html" %}
+
+{% block title %}Detalle Notebook - Sistema de Inventario{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="{{ url_for('notebooks_dashboard') }}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Volver al Dashboard
+    </a>
+    <a href="{{ url_for('notebooks_editar', notebook_id=notebook.id) }}" class="btn btn-outline-primary">
+        <i class="fas fa-edit me-2"></i>Editar Información
+    </a>
+</div>
+
+<div class="row">
+    <!-- Información de la Notebook -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-laptop me-2"></i>Información de la Notebook</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless">
+                    <tr>
+                        <th width="40%">Número de Serie:</th>
+                        <td><code class="fs-6">{{ notebook.numero_serie }}</code></td>
+                    </tr>
+                    <tr>
+                        <th>Nombre PC:</th>
+                        <td>
+                            {% if notebook.pc_nombre %}
+                            <span class="fw-bold"><i class="fas fa-desktop me-1"></i>{{ notebook.pc_nombre }}</span>
+                            {% else %}
+                            <span class="text-muted">No registrado</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Marca:</th>
+                        <td class="fw-bold">{{ notebook.marca or 'N/A' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Modelo:</th>
+                        <td>{{ notebook.modelo or 'N/A' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Dirección IP:</th>
+                        <td>
+                            {% if notebook.ip %}
+                            <code class="text-info">{{ notebook.ip }}</code>
+                            {% else %}
+                            <span class="text-muted">No registrada</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>MAC Address:</th>
+                        <td>
+                            {% if notebook.mac_address %}
+                            <code class="text-primary">{{ notebook.mac_address }}</code>
+                            {% else %}
+                            <span class="text-muted">No registrada</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Estado:</th>
+                        <td>
+                            {% if notebook.estado == 'Prestada' %}
+                                <span class="badge bg-warning text-dark fs-6">Prestada</span>
+                            {% elif notebook.estado == 'Guardada' %}
+                                <span class="badge bg-success fs-6">Guardada</span>
+                            {% elif notebook.estado == 'En uso interno' %}
+                                <span class="badge bg-info text-dark fs-6">En uso interno</span>
+                            {% elif notebook.estado == 'En reparación' %}
+                                <span class="badge bg-secondary fs-6">En reparación</span>
+                            {% elif notebook.estado == 'Baja / Desuso' %}
+                                <span class="badge bg-dark fs-6">Baja / Desuso</span>
+                            {% elif notebook.estado == 'Extraviada / Sin localizar' %}
+                                <span class="badge bg-danger fs-6">Extraviada</span>
+                            {% elif notebook.estado == 'Depósito' %}
+                                <span class="badge text-white fs-6" style="background-color:#a97142;">Depósito</span>
+                            {% else %}
+                                <span class="badge bg-secondary fs-6">{{ notebook.estado }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estado Actual -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header 
+                {% if notebook.estado == 'Prestada' %}bg-warning text-dark
+                {% elif notebook.estado == 'Guardada' %}bg-success text-white
+                {% elif notebook.estado == 'En uso interno' %}bg-info text-white
+                {% elif notebook.estado == 'En reparación' %}bg-secondary text-white
+                {% elif notebook.estado == 'Baja / Desuso' %}bg-dark text-white
+                {% elif notebook.estado == 'Extraviada / Sin localizar' %}bg-danger text-white
+                {% elif notebook.estado == 'Depósito' %}text-white
+                {% else %}bg-secondary text-white
+                {% endif %}"
+                {% if notebook.estado == 'Depósito' %}style="background-color:#a97142;"{% endif %}>
+                <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Estado Actual</h5>
+            </div>
+            <div class="card-body">
+                {% if notebook.estado == 'Prestada' %}
+                    <h6 class="text-warning"><i class="fas fa-hand-holding me-2"></i>Prestada a:</h6>
+                    <p class="fs-4 fw-bold mb-3">{{ notebook.persona_actual }}</p>
+                    
+                    <p class="mb-2">
+                        <strong>Fecha de entrega:</strong><br>
+                        {% if notebook.fecha_entrega %}
+                        <span class="text-primary">{{ notebook.fecha_entrega[:10] }}</span> a las 
+                        <span class="text-primary">{{ notebook.fecha_entrega[11:16] }}</span>
+                        {% else %}
+                        N/A
+                        {% endif %}
+                    </p>
+                    
+                    {% if notebook.observaciones %}
+                    <p class="mb-3">
+                        <strong>Observaciones:</strong><br>
+                        <span class="text-muted">{{ notebook.observaciones }}</span>
+                    </p>
+                    {% endif %}
+                    
+                    <button class="btn btn-success w-100" data-bs-toggle="modal" data-bs-target="#devolverModal">
+                        <i class="fas fa-undo me-2"></i>Registrar Devolución
+                    </button>
+                
+                {% elif notebook.estado == 'Guardada' %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-archive fa-3x text-success mb-3"></i>
+                        <h6>Notebook Guardada</h6>
+                        <p class="text-muted">Disponible para préstamo</p>
+                        
+                        <button class="btn btn-warning w-100 mt-3" data-bs-toggle="modal" data-bs-target="#prestarModal">
+                            <i class="fas fa-hand-holding me-2"></i>Registrar Préstamo
+                        </button>
+                    </div>
+                
+                {% elif notebook.estado == 'En uso interno' %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-briefcase fa-3x text-info mb-3"></i>
+                        <h6>En Uso Interno</h6>
+                        <p class="text-muted">La notebook está siendo utilizada internamente por la empresa</p>
+                        
+                        {% if notebook.observaciones %}
+                        <div class="alert alert-info mt-3 text-start">
+                            <strong>Detalles:</strong><br>
+                            {{ notebook.observaciones }}
+                        </div>
+                        {% endif %}
+                    </div>
+                
+                {% elif notebook.estado == 'En reparación' %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-tools fa-3x text-secondary mb-3"></i>
+                        <h6>En Reparación</h6>
+                        <p class="text-muted">La notebook se encuentra en proceso de reparación o mantenimiento</p>
+                        
+                        {% if notebook.observaciones %}
+                        <div class="alert alert-warning mt-3 text-start">
+                            <strong>Motivo/Detalles:</strong><br>
+                            {{ notebook.observaciones }}
+                        </div>
+                        {% endif %}
+                    </div>
+                
+                {% elif notebook.estado == 'Baja / Desuso' %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-ban fa-3x text-dark mb-3"></i>
+                        <h6>Baja / Desuso</h6>
+                        <p class="text-muted">La notebook ha sido dada de baja y no está en uso</p>
+                        
+                        {% if notebook.observaciones %}
+                        <div class="alert alert-secondary mt-3 text-start">
+                            <strong>Motivo:</strong><br>
+                            {{ notebook.observaciones }}
+                        </div>
+                        {% endif %}
+                    </div>
+                
+                {% elif notebook.estado == 'Extraviada / Sin localizar' %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-exclamation-triangle fa-3x text-danger mb-3"></i>
+                        <h6 class="text-danger">Extraviada / Sin Localizar</h6>
+                        <p class="text-muted">La notebook no puede ser localizada actualmente</p>
+                        
+                        {% if notebook.observaciones %}
+                        <div class="alert alert-danger mt-3 text-start">
+                            <strong>Información:</strong><br>
+                            {{ notebook.observaciones }}
+                        </div>
+                        {% endif %}
+                        
+                        {% if notebook.persona_actual %}
+                        <div class="alert alert-warning mt-3 text-start">
+                            <strong>Última persona:</strong> {{ notebook.persona_actual }}<br>
+                            {% if notebook.fecha_entrega %}
+                            <strong>Última fecha de entrega:</strong> {{ notebook.fecha_entrega[:10] }}
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                
+                {% elif notebook.estado == 'Depósito' %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-warehouse fa-3x mb-3" style="color:#a97142;"></i>
+                        <h6>En Depósito</h6>
+                        <p class="text-muted">La notebook se encuentra almacenada en depósito</p>
+                        
+                        <button class="btn w-100 mt-3 text-white" style="background-color:#a97142;" data-bs-toggle="modal" data-bs-target="#prestarModal">
+                            <i class="fas fa-hand-holding me-2"></i>Registrar Préstamo
+                        </button>
+                    </div>
+                
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-question-circle fa-3x text-secondary mb-3"></i>
+                        <h6>Estado: {{ notebook.estado }}</h6>
+                        <p class="text-muted">Notebook guardada en el depósito</p>
+                        
+                        {% if notebook.observaciones %}
+                        <div class="alert alert-secondary mt-3 text-start">
+                            <strong>Observaciones:</strong><br>
+                            {{ notebook.observaciones }}
+                        </div>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+<!-- Historial de Préstamos -->
+<div class="card">
+    <div class="card-header bg-info text-white">
+        <h5 class="mb-0"><i class="fas fa-history me-2"></i>Historial de Préstamos</h5>
+    </div>
+    <div class="card-body">
+        {% if historial %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Persona</th>
+                        <th>Fecha Entrega</th>
+                        <th>Fecha Devolución</th>
+                        <th>Estado</th>
+                        <th>Observaciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in historial %}
+                    <tr>
+                        <td class="fw-bold">{{ item.persona }}</td>
+                        <td>
+                            {% if item.fecha_entrega %}
+                            <div>{{ item.fecha_entrega[:10] }}</div>
+                            <small class="text-muted">{{ item.fecha_entrega[11:16] }}</small>
+                            {% else %}
+                            N/A
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if item.fecha_devolucion %}
+                                <div>{{ item.fecha_devolucion[:10] }}</div>
+                                <small class="text-muted">{{ item.fecha_devolucion[11:16] }}</small>
+                            {% else %}
+                                <span class="badge bg-warning text-dark">En préstamo</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if item.fecha_devolucion %}
+                                <span class="badge bg-success">Devuelta</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark">Activo</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if item.observaciones %}
+                                <small class="text-muted">{{ item.observaciones[:80] }}{% if item.observaciones|length > 80 %}...{% endif %}</small>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4 text-muted">
+            <i class="fas fa-inbox fa-2x mb-2"></i>
+            <p>No hay historial de préstamos para esta notebook</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal Prestar -->
+<div class="modal fade" id="prestarModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title">Registrar Préstamo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('notebooks_prestar', notebook_id=notebook.id) }}">
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <strong>Notebook:</strong> {{ notebook.marca }} {{ notebook.modelo }}<br>
+                        <strong>Serie:</strong> {{ notebook.numero_serie }}
+                        {% if notebook.pc_nombre %}
+                        <br><strong>PC:</strong> {{ notebook.pc_nombre }}
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Persona *</label>
+                        <input type="text" class="form-control" name="persona" required placeholder="Nombre completo">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Observaciones</label>
+                        <textarea class="form-control" name="observaciones" rows="3" placeholder="Motivo del préstamo, proyecto, etc."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-hand-holding me-2"></i>Registrar Préstamo
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Devolver -->
+<div class="modal fade" id="devolverModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">Registrar Devolución</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('notebooks_devolver', notebook_id=notebook.id) }}">
+                <div class="modal-body">
+                    <p>¿Confirma la devolución de la notebook prestada a <strong>{{ notebook.persona_actual }}</strong>?</p>
+                    <div class="alert alert-info">
+                        <strong>Notebook:</strong> {{ notebook.marca }} {{ notebook.modelo }}<br>
+                        <strong>Serie:</strong> {{ notebook.numero_serie }}<br>
+                        <strong>Entregada:</strong> {{ notebook.fecha_entrega[:10] if notebook.fecha_entrega else 'N/A' }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Observaciones de devolución</label>
+                        <textarea class="form-control" name="observaciones" rows="3" placeholder="Estado de la notebook, novedades, etc."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-undo me-2"></i>Registrar Devolución
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
